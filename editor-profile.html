@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Okify — Editor Profile</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,50 50,95 5,50' fill='%238b5cf6'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e18;
+    --bg-2: #0b0b14;
+    --bg-3: #13131f;
+    --bg-4: #1a1a2e;
+    --purple: #8b5cf6;
+    --purple-dim: #7c3aed;
+    --purple-bright: #a78bfa;
+    --text: #e8e6f0;
+    --text-muted: #6b6980;
+    --text-dim: #4a4860;
+    --text-dimmer: #3a3a52;
+    --border: rgba(255,255,255,0.07);
+    --border-purple: rgba(139,92,246,0.2);
+    --sidebar-width: 240px;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; display: flex;
+  }
+
+  .sidebar {
+    width: var(--sidebar-width); background: var(--bg-2);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 50;
+  }
+
+  .sidebar-logo { padding: 1.5rem; border-bottom: 1px solid var(--border); }
+  .logo { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.03em; color: #fff; text-decoration: none; }
+  .logo span { color: var(--purple); }
+
+  .sidebar-nav { flex: 1; padding: 1rem 0.75rem; display: flex; flex-direction: column; gap: 0.2rem; }
+
+  .nav-section-label {
+    font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-dim);
+    padding: 0.5rem 0.75rem; margin-top: 0.5rem;
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 0.6rem 0.75rem; border-radius: 8px;
+    color: var(--text-muted); text-decoration: none;
+    font-size: 0.85rem; font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+  .nav-item.active { background: rgba(139,92,246,0.12); color: var(--purple-bright); }
+  .nav-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+
+  .sidebar-bottom { padding: 1rem 0.75rem; border-top: 1px solid var(--border); }
+
+  .user-info {
+    display: flex; align-items: center; gap: 0.65rem;
+    padding: 0.6rem 0.75rem; border-radius: 8px; cursor: pointer;
+  }
+
+  .user-avatar {
+    width: 32px; height: 32px; border-radius: 8px; background: var(--purple);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+
+  .user-name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+  .user-role { font-size: 0.68rem; color: var(--text-dim); }
+
+  .logout-btn {
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 0.6rem 0.75rem; border-radius: 8px;
+    color: var(--text-dim); font-size: 0.82rem; font-weight: 500;
+    cursor: pointer; border: none; background: none; width: 100%;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: color 0.15s, background 0.15s; margin-top: 0.25rem;
+  }
+  .logout-btn:hover { color: #f09595; background: rgba(240,149,149,0.06); }
+
+  .main {
+    margin-left: var(--sidebar-width); flex: 1; padding: 2rem;
+    max-width: calc(100vw - var(--sidebar-width));
+  }
+
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    color: var(--text-muted); font-size: 0.82rem; font-weight: 500;
+    text-decoration: none; margin-bottom: 1.5rem; transition: color 0.2s;
+  }
+  .back-btn:hover { color: var(--text); }
+
+  .profile-layout {
+    display: grid; grid-template-columns: 1fr 300px; gap: 1.5rem;
+    align-items: flex-start;
+  }
+
+  .card {
+    background: var(--bg-3); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-label {
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-dim);
+    margin-bottom: 1rem; padding-bottom: 0.65rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* PROFILE HEADER */
+  .profile-header {
+    display: flex; align-items: flex-start; gap: 1.5rem; margin-bottom: 1.5rem;
+  }
+
+  .profile-avatar-lg {
+    width: 80px; height: 80px; border-radius: 16px;
+    background: var(--purple); display: flex; align-items: center;
+    justify-content: center; font-size: 2rem; font-weight: 800;
+    color: #fff; flex-shrink: 0;
+  }
+
+  .profile-header-info { flex: 1; }
+
+  .profile-name { font-size: 1.5rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; margin-bottom: 0.3rem; }
+
+  .profile-tagline { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.75rem; line-height: 1.5; }
+
+  .profile-meta-row {
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    font-size: 0.78rem; color: var(--text-muted);
+  }
+
+  .profile-meta-item { display: flex; align-items: center; gap: 0.35rem; }
+
+  .rating-stars { color: var(--purple); font-weight: 700; }
+
+  .verified-badge {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    background: rgba(110,231,183,0.1); color: #6ee7b7;
+    font-size: 0.65rem; font-weight: 700; padding: 0.2rem 0.55rem;
+    border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat-box {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1rem; text-align: center;
+  }
+
+  .stat-box-num { font-size: 1.4rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; }
+  .stat-box-num span { color: var(--purple); }
+  .stat-box-label { font-size: 0.65rem; color: var(--text-dim); margin-top: 0.2rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* ABOUT */
+  .about-text { font-size: 0.88rem; color: var(--text-muted); line-height: 1.8; white-space: pre-wrap; }
+
+  /* SPECIALISMS */
+  .specialisms-grid {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;
+  }
+
+  .specialism-tag {
+    background: rgba(139,92,246,0.1); color: var(--purple-bright);
+    padding: 0.3rem 0.75rem; border-radius: 6px;
+    font-size: 0.78rem; font-weight: 500;
+  }
+
+  /* PORTFOLIO */
+  .portfolio-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.85rem;
+    margin-top: 0.5rem;
+  }
+
+  .portfolio-item {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+    transition: border-color 0.2s; cursor: pointer;
+  }
+  .portfolio-item:hover { border-color: var(--border-purple); }
+
+  .portfolio-thumb {
+    width: 100%; aspect-ratio: 16/9;
+    background: var(--bg-4); display: flex; align-items: center;
+    justify-content: center; font-size: 1.5rem; color: var(--text-dim);
+  }
+
+  .portfolio-info { padding: 0.75rem; }
+  .portfolio-title { font-size: 0.82rem; font-weight: 600; color: #fff; margin-bottom: 0.2rem; }
+  .portfolio-meta { font-size: 0.7rem; color: var(--text-dim); }
+
+  .empty-portfolio {
+    text-align: center; padding: 2rem; color: var(--text-dim);
+    font-size: 0.82rem;
+  }
+
+  /* REVIEWS */
+  .review-item {
+    padding: 1rem; background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 0.65rem;
+  }
+  .review-item:last-child { margin-bottom: 0; }
+
+  .review-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+  .reviewer-name { font-size: 0.82rem; font-weight: 600; color: #fff; }
+  .review-rating { font-size: 0.78rem; color: var(--purple); font-weight: 700; }
+  .review-text { font-size: 0.8rem; color: var(--text-muted); line-height: 1.65; }
+  .review-date { font-size: 0.68rem; color: var(--text-dim); margin-top: 0.4rem; }
+
+  .empty-reviews {
+    text-align: center; padding: 1.5rem; color: var(--text-dim);
+    font-size: 0.82rem;
+  }
+
+  /* RIGHT SIDEBAR */
+  .right-sidebar { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .action-card {
+    background: var(--bg-3); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.35rem;
+    position: sticky; top: 2rem;
+  }
+
+  .rate-display { text-align: center; padding: 0.75rem 0; margin-bottom: 1rem; border-bottom: 1px solid var(--border); }
+  .rate-amount { font-size: 1.6rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; }
+  .rate-label { font-size: 0.7rem; color: var(--text-dim); margin-top: 0.2rem; }
+
+  .btn-hire {
+    width: 100%; padding: 0.85rem; border-radius: var(--radius);
+    background: var(--purple); color: #fff;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700;
+    font-size: 0.92rem; border: none; cursor: pointer;
+    transition: background 0.2s; margin-bottom: 0.65rem;
+  }
+  .btn-hire:hover { background: var(--purple-dim); }
+
+  .btn-message {
+    width: 100%; padding: 0.75rem; border-radius: var(--radius);
+    background: rgba(255,255,255,0.05); color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600;
+    font-size: 0.88rem; border: 1px solid var(--border); cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-message:hover { background: rgba(255,255,255,0.08); }
+
+  .availability-badge {
+    display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+    font-size: 0.72rem; color: #6ee7b7; font-weight: 500; margin-top: 0.75rem;
+  }
+
+  .availability-dot { width: 6px; height: 6px; border-radius: 50%; background: #6ee7b7; }
+
+  .details-list { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.5rem; }
+  .detail-row { display: flex; justify-content: space-between; font-size: 0.78rem; }
+  .detail-row span:first-child { color: var(--text-dim); }
+  .detail-row span:last-child { color: var(--text); font-weight: 500; }
+
+  .own-profile-notice {
+    background: rgba(139,92,246,0.06); border: 1px solid var(--border-purple);
+    border-radius: var(--radius); padding: 0.85rem 1rem;
+    font-size: 0.78rem; color: var(--purple-bright); margin-bottom: 1rem; line-height: 1.5;
+    text-align: center;
+  }
+
+  .edit-profile-btn {
+    display: block; width: 100%; padding: 0.75rem; border-radius: var(--radius);
+    background: rgba(139,92,246,0.1); color: var(--purple-bright);
+    font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600;
+    font-size: 0.88rem; border: 1px solid var(--border-purple); cursor: pointer;
+    text-align: center; text-decoration: none; transition: background 0.2s;
+  }
+  .edit-profile-btn:hover { background: rgba(139,92,246,0.15); }
+
+  .loading-state { text-align: center; padding: 4rem; color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <a href="/index.html" class="logo">okify<span>.</span></a>
+  </div>
+  <nav class="sidebar-nav" id="sidebar-nav">
+    <span class="nav-section-label">Main</span>
+    <a class="nav-item" href="/dashboard-editor.html"><span class="nav-icon">⊞</span> Dashboard</a>
+    <a class="nav-item" href="/browse-jobs.html"><span class="nav-icon">◎</span> Browse jobs</a>
+    <a class="nav-item active" href="#"><span class="nav-icon">◉</span> Editor profile</a>
+    <span class="nav-section-label">My work</span>
+    <a class="nav-item" href="#"><span class="nav-icon">◈</span> Active jobs</a>
+    <a class="nav-item" href="#"><span class="nav-icon">⟳</span> Applications</a>
+    <a class="nav-item" href="#"><span class="nav-icon">✓</span> Completed</a>
+    <span class="nav-section-label">Account</span>
+    <a class="nav-item" href="#"><span class="nav-icon">◉</span> Messages</a>
+    <a class="nav-item" href="#"><span class="nav-icon">⚙</span> Settings</a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="user-info">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <div>
+        <div class="user-name" id="user-name">Loading...</div>
+        <div class="user-role" id="user-role">Editor</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="handleLogout()"><span>↪</span> Log out</button>
+  </div>
+</aside>
+
+<main class="main">
+  <a href="javascript:history.back()" class="back-btn">← Back</a>
+
+  <div id="loading" class="loading-state">Loading profile...</div>
+
+  <div id="profile-content" style="display:none;">
+    <div class="profile-layout">
+      <div>
+        <!-- PROFILE HEADER -->
+        <div class="card">
+          <div class="profile-header">
+            <div class="profile-avatar-lg" id="profile-avatar">?</div>
+            <div class="profile-header-info">
+              <div class="profile-name" id="profile-name">Loading...</div>
+              <div class="profile-tagline" id="profile-tagline">Video editor</div>
+              <div class="profile-meta-row">
+                <div class="profile-meta-item">
+                  <span class="rating-stars" id="profile-rating">★ —</span>
+                </div>
+                <div class="profile-meta-item" id="reviews-count-meta">0 reviews</div>
+                <div class="profile-meta-item" id="jobs-meta">0 jobs completed</div>
+                <span class="verified-badge">✓ Verified</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="stats-row">
+            <div class="stat-box">
+              <div class="stat-box-num" id="stat-jobs">0</div>
+              <div class="stat-box-label">Jobs done</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-box-num" id="stat-rating">—</div>
+              <div class="stat-box-label">Avg rating</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-box-num" id="stat-response">—</div>
+              <div class="stat-box-label">Response time</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-box-num" id="stat-completion">—<span>%</span></div>
+              <div class="stat-box-label">Completion</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ABOUT -->
+        <div class="card">
+          <div class="section-label">About</div>
+          <div class="about-text" id="about-text">This editor hasn't added a bio yet.</div>
+        </div>
+
+        <!-- SPECIALISMS -->
+        <div class="card">
+          <div class="section-label">Specialisms</div>
+          <div class="specialisms-grid" id="specialisms-grid">
+            <span style="font-size:0.82rem; color:var(--text-dim);">No specialisms listed yet.</span>
+          </div>
+        </div>
+
+        <!-- PORTFOLIO -->
+        <div class="card">
+          <div class="section-label">Portfolio</div>
+          <div id="portfolio-content">
+            <div class="empty-portfolio">No portfolio items added yet.</div>
+          </div>
+        </div>
+
+        <!-- REVIEWS -->
+        <div class="card">
+          <div class="section-label">Reviews</div>
+          <div id="reviews-content">
+            <div class="empty-reviews">No reviews yet.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT SIDEBAR -->
+      <div class="right-sidebar">
+        <div class="action-card" id="action-card">
+          <div id="own-profile-section" style="display:none;">
+            <div class="own-profile-notice">This is your public profile. This is what clients see.</div>
+            <a href="/my-profile.html" class="edit-profile-btn">Edit my profile</a>
+          </div>
+
+          <div id="hire-section">
+            <div class="rate-display">
+              <div class="rate-amount" id="rate-display">—</div>
+              <div class="rate-label">Starting rate per video</div>
+            </div>
+
+            <button class="btn-hire" onclick="hireEditor()">Post a job for this editor</button>
+            <button class="btn-message" onclick="messageEditor()">Send a message</button>
+
+            <div class="availability-badge">
+              <div class="availability-dot"></div>
+              Available for work
+            </div>
+          </div>
+
+          <div style="margin-top:1.25rem; padding-top:1.25rem; border-top:1px solid var(--border);">
+            <div class="section-label" style="border:none; padding:0; margin-bottom:0.75rem;">Details</div>
+            <div class="details-list">
+              <div class="detail-row"><span>Member since</span><span id="member-since">—</span></div>
+              <div class="detail-row"><span>Account type</span><span>Editor</span></div>
+              <div class="detail-row"><span>Plan</span><span id="editor-plan">Free</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const SUPABASE_URL = 'YOUR_SUPABASE_URL'
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'
+  const { createClient } = supabase
+  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+  let currentUser = null
+  let profileUserId = null
+
+  function getEditorIdFromUrl() {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('id')
+  }
+
+  function formatDate(dateStr) {
+    return new Date(dateStr).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
+  }
+
+  function renderProfile(profile, isOwn) {
+    const username = profile.username || 'Unknown editor'
+    const initial = username.charAt(0).toUpperCase()
+
+    document.getElementById('profile-avatar').textContent = initial
+    document.getElementById('profile-name').textContent = username
+    document.getElementById('profile-tagline').textContent = profile.tagline || 'Video editor on Okify'
+    document.getElementById('about-text').textContent = profile.bio || 'This editor hasn\'t added a bio yet.'
+    document.getElementById('member-since').textContent = formatDate(profile.created_at)
+    document.getElementById('rate-display').textContent = profile.starting_rate ? '£' + profile.starting_rate : '—'
+    document.getElementById('editor-plan').textContent = profile.plan || 'Free'
+
+    document.getElementById('stat-jobs').textContent = profile.jobs_completed || 0
+    document.getElementById('stat-rating').textContent = profile.avg_rating ? profile.avg_rating.toFixed(1) : '—'
+    document.getElementById('stat-response').textContent = profile.response_time || '—'
+    document.getElementById('stat-completion').textContent = profile.completion_rate || '—'
+
+    document.getElementById('profile-rating').textContent = profile.avg_rating ? '★ ' + profile.avg_rating.toFixed(1) : '★ —'
+    document.getElementById('reviews-count-meta').textContent = (profile.review_count || 0) + ' reviews'
+    document.getElementById('jobs-meta').textContent = (profile.jobs_completed || 0) + ' jobs completed'
+
+    if (profile.specialisms && profile.specialisms.length > 0) {
+      document.getElementById('specialisms-grid').innerHTML = profile.specialisms
+        .map(s => `<span class="specialism-tag">${s}</span>`).join('')
+    }
+
+    if (isOwn) {
+      document.getElementById('own-profile-section').style.display = 'block'
+      document.getElementById('hire-section').style.display = 'none'
+    }
+
+    document.getElementById('loading').style.display = 'none'
+    document.getElementById('profile-content').style.display = 'block'
+  }
+
+  function hireEditor() {
+    window.location.href = '/post-job.html?editor=' + profileUserId
+  }
+
+  function messageEditor() {
+    window.location.href = '/messages.html?user=' + profileUserId
+  }
+
+  async function init() {
+    profileUserId = getEditorIdFromUrl()
+
+    const { data: { session } } = await client.auth.getSession()
+    if (!session) { window.location.href = '/login.html'; return }
+
+    currentUser = session.user
+
+    const { data: myProfile } = await client
+      .from('profiles')
+      .select('username, account_type')
+      .eq('id', session.user.id)
+      .single()
+
+    if (myProfile) {
+      const username = myProfile.username || session.user.email.split('@')[0]
+      document.getElementById('user-name').textContent = username
+      document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase()
+      document.getElementById('user-role').textContent = myProfile.account_type === 'editor' ? 'Editor' : 'Client'
+
+      if (myProfile.account_type === 'client') {
+        document.getElementById('sidebar-nav').innerHTML = `
+          <span class="nav-section-label">Main</span>
+          <a class="nav-item" href="/dashboard-client.html"><span class="nav-icon">⊞</span> Dashboard</a>
+          <a class="nav-item" href="/post-job.html"><span class="nav-icon">+</span> Post a job</a>
+          <a class="nav-item" href="/browse-editors.html"><span class="nav-icon">◎</span> Browse editors</a>
+          <span class="nav-section-label">My jobs</span>
+          <a class="nav-item" href="#"><span class="nav-icon">◈</span> Active jobs</a>
+          <a class="nav-item" href="#"><span class="nav-icon">✓</span> Completed</a>
+          <span class="nav-section-label">Account</span>
+          <a class="nav-item" href="#"><span class="nav-icon">◉</span> Messages</a>
+          <a class="nav-item" href="#"><span class="nav-icon">⚙</span> Settings</a>
+        `
+      }
+    }
+
+    if (!profileUserId) {
+      profileUserId = session.user.id
+    }
+
+    const isOwn = profileUserId === session.user.id
+
+    const { data: profile, error } = await client
+      .from('profiles')
+      .select('*')
+      .eq('id', profileUserId)
+      .single()
+
+    if (error || !profile) {
+      document.getElementById('loading').textContent = 'Profile not found.'
+      return
+    }
+
+    if (profile.account_type !== 'editor') {
+      window.location.href = '/client-profile.html?id=' + profileUserId
+      return
+    }
+
+    renderProfile(profile, isOwn)
+  }
+
+  async function handleLogout() {
+    await client.auth.signOut()
+    window.location.href = '/index.html'
+  }
+
+  init()
+</script>
+
+</body>
+</html>
