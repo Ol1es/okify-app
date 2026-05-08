@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Okify — Job Detail</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,50 50,95 5,50' fill='%238b5cf6'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e18;
+    --bg-2: #0b0b14;
+    --bg-3: #13131f;
+    --bg-4: #1a1a2e;
+    --purple: #8b5cf6;
+    --purple-dim: #7c3aed;
+    --purple-bright: #a78bfa;
+    --blue: #2563eb;
+    --blue-bright: #60a5fa;
+    --text: #e8e6f0;
+    --text-muted: #6b6980;
+    --text-dim: #4a4860;
+    --text-dimmer: #3a3a52;
+    --border: rgba(255,255,255,0.07);
+    --border-purple: rgba(139,92,246,0.2);
+    --sidebar-width: 240px;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; display: flex;
+  }
+
+  .sidebar {
+    width: var(--sidebar-width); background: var(--bg-2);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 50;
+  }
+
+  .sidebar-logo { padding: 1.5rem; border-bottom: 1px solid var(--border); }
+
+  .logo { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.03em; color: #fff; text-decoration: none; }
+  .logo span { color: var(--purple); }
+
+  .sidebar-nav { flex: 1; padding: 1rem 0.75rem; display: flex; flex-direction: column; gap: 0.2rem; }
+
+  .nav-section-label {
+    font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-dim);
+    padding: 0.5rem 0.75rem; margin-top: 0.5rem;
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 0.6rem 0.75rem; border-radius: 8px;
+    color: var(--text-muted); text-decoration: none;
+    font-size: 0.85rem; font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+  .nav-item.active { background: rgba(139,92,246,0.12); color: var(--purple-bright); }
+  .nav-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+
+  .sidebar-bottom { padding: 1rem 0.75rem; border-top: 1px solid var(--border); }
+
+  .user-info {
+    display: flex; align-items: center; gap: 0.65rem;
+    padding: 0.6rem 0.75rem; border-radius: 8px; cursor: pointer;
+  }
+  .user-avatar {
+    width: 32px; height: 32px; border-radius: 8px; background: var(--purple);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .user-name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+  .user-role { font-size: 0.68rem; color: var(--text-dim); }
+
+  .logout-btn {
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 0.6rem 0.75rem; border-radius: 8px;
+    color: var(--text-dim); font-size: 0.82rem; font-weight: 500;
+    cursor: pointer; border: none; background: none; width: 100%;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: color 0.15s, background 0.15s; margin-top: 0.25rem;
+  }
+  .logout-btn:hover { color: #f09595; background: rgba(240,149,149,0.06); }
+
+  .main {
+    margin-left: var(--sidebar-width); flex: 1; padding: 2rem;
+    max-width: calc(100vw - var(--sidebar-width));
+  }
+
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    color: var(--text-muted); font-size: 0.82rem; font-weight: 500;
+    text-decoration: none; margin-bottom: 1.5rem;
+    transition: color 0.2s;
+  }
+  .back-btn:hover { color: var(--text); }
+
+  .content-layout {
+    display: grid; grid-template-columns: 1fr 320px; gap: 1.5rem;
+    align-items: flex-start;
+  }
+
+  .main-card {
+    background: var(--bg-3); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .job-header { margin-bottom: 1.5rem; }
+
+  .job-marketplace-badge {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    font-size: 0.68rem; font-weight: 700; padding: 0.22rem 0.65rem;
+    border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+  }
+  .badge-standard { background: rgba(139,92,246,0.12); color: var(--purple-bright); }
+  .badge-free { background: rgba(37,99,235,0.12); color: var(--blue-bright); }
+
+  .job-title { font-size: 1.5rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; margin-bottom: 0.75rem; line-height: 1.2; }
+
+  .job-meta-row {
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    font-size: 0.8rem; color: var(--text-muted);
+  }
+
+  .meta-item { display: flex; align-items: center; gap: 0.35rem; }
+  .meta-icon { color: var(--text-dim); }
+
+  .divider { height: 1px; background: var(--border); margin: 1.5rem 0; }
+
+  .section-label {
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.75rem;
+  }
+
+  .job-description {
+    font-size: 0.88rem; color: var(--text-muted); line-height: 1.8;
+    white-space: pre-wrap;
+  }
+
+  .details-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.85rem;
+    margin-top: 0.75rem;
+  }
+
+  .detail-item {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 0.85rem;
+  }
+  .detail-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 0.35rem; }
+  .detail-value { font-size: 0.88rem; font-weight: 600; color: #fff; }
+
+  .tags-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.75rem; }
+  .tag {
+    font-size: 0.72rem; font-weight: 500;
+    background: rgba(139,92,246,0.1); color: var(--purple-bright);
+    padding: 0.25rem 0.65rem; border-radius: 5px;
+  }
+  .tag.free { background: rgba(37,99,235,0.1); color: var(--blue-bright); }
+
+  .complexity-badge {
+    display: inline-flex; font-size: 0.72rem; font-weight: 700;
+    padding: 0.25rem 0.65rem; border-radius: 5px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .complexity-basic { background: rgba(110,231,183,0.1); color: #6ee7b7; }
+  .complexity-standard { background: rgba(251,191,36,0.1); color: #fbbf24; }
+  .complexity-high { background: rgba(139,92,246,0.15); color: var(--purple-bright); }
+
+  /* RIGHT SIDEBAR */
+  .right-sidebar { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .action-card {
+    background: var(--bg-3); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.35rem;
+    position: sticky; top: 2rem;
+  }
+
+  .price-display {
+    text-align: center; padding: 1rem 0; margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .price-amount { font-size: 2.2rem; font-weight: 800; color: #fff; letter-spacing: -0.03em; }
+  .price-label { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem; }
+
+  .action-details { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.25rem; }
+  .action-detail-row { display: flex; justify-content: space-between; font-size: 0.8rem; }
+  .action-detail-row span:first-child { color: var(--text-dim); }
+  .action-detail-row span:last-child { color: var(--text); font-weight: 500; }
+
+  .btn-apply {
+    width: 100%; padding: 0.9rem; border-radius: var(--radius);
+    background: var(--purple); color: #fff;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700;
+    font-size: 0.95rem; border: none; cursor: pointer;
+    transition: background 0.2s, transform 0.1s; margin-bottom: 0.65rem;
+  }
+  .btn-apply:hover { background: var(--purple-dim); transform: scale(0.99); }
+  .btn-apply:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-apply.free { background: var(--blue); }
+  .btn-apply.free:hover { background: #1d4ed8; }
+
+  .btn-message {
+    width: 100%; padding: 0.75rem; border-radius: var(--radius);
+    background: rgba(255,255,255,0.05); color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600;
+    font-size: 0.88rem; border: 1px solid var(--border); cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .btn-message:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); }
+
+  .apply-note { font-size: 0.7rem; color: var(--text-dim); text-align: center; margin-top: 0.75rem; line-height: 1.5; }
+
+  /* CLIENT CARD */
+  .client-card {
+    background: var(--bg-3); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.35rem;
+  }
+
+  .client-card-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 1rem; }
+
+  .client-info { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+
+  .client-avatar {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: var(--bg-4); display: flex; align-items: center;
+    justify-content: center; font-size: 1rem; font-weight: 700;
+    color: var(--text-muted); flex-shrink: 0; border: 1px solid var(--border);
+  }
+
+  .client-name { font-size: 0.9rem; font-weight: 700; color: #fff; margin-bottom: 0.15rem; }
+  .client-joined { font-size: 0.72rem; color: var(--text-dim); }
+
+  .client-stats { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .client-stat { flex: 1; padding: 0.6rem; border-right: 1px solid var(--border); text-align: center; }
+  .client-stat:last-child { border-right: none; }
+  .client-stat-num { font-size: 0.95rem; font-weight: 800; color: #fff; }
+  .client-stat-label { font-size: 0.6rem; color: var(--text-dim); margin-top: 0.1rem; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .view-profile-btn {
+    display: block; text-align: center; margin-top: 0.85rem;
+    font-size: 0.78rem; color: var(--purple-bright); text-decoration: none;
+    font-weight: 500; transition: opacity 0.2s;
+  }
+  .view-profile-btn:hover { opacity: 0.8; }
+
+  /* APPLY MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: none; align-items: center; justify-content: center;
+    z-index: 200; padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--bg-3); border: 1px solid var(--border-purple);
+    border-radius: 20px; padding: 2rem; width: 100%; max-width: 480px;
+  }
+
+  .modal-title { font-size: 1.2rem; font-weight: 800; color: #fff; margin-bottom: 0.35rem; }
+  .modal-sub { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6; }
+
+  .modal-group { margin-bottom: 1.1rem; }
+  .modal-label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.4rem; }
+  .modal-textarea {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 0.75rem 1rem; border-radius: var(--radius);
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.88rem;
+    outline: none; resize: vertical; min-height: 120px; line-height: 1.6;
+    transition: border-color 0.2s;
+  }
+  .modal-textarea:focus { border-color: rgba(139,92,246,0.5); }
+  .modal-textarea::placeholder { color: var(--text-dim); }
+
+  .modal-input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 0.72rem 1rem; border-radius: var(--radius);
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.88rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  .modal-input:focus { border-color: rgba(139,92,246,0.5); }
+  .modal-input::placeholder { color: var(--text-dim); }
+
+  .modal-actions { display: flex; gap: 0.65rem; margin-top: 1.5rem; }
+
+  .btn-modal-submit {
+    flex: 1; padding: 0.8rem; border-radius: var(--radius);
+    background: var(--purple); color: #fff;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700;
+    font-size: 0.88rem; border: none; cursor: pointer; transition: background 0.2s;
+  }
+  .btn-modal-submit:hover { background: var(--purple-dim); }
+  .btn-modal-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .btn-modal-cancel {
+    padding: 0.8rem 1.25rem; border-radius: var(--radius);
+    background: rgba(255,255,255,0.05); color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600;
+    font-size: 0.88rem; border: 1px solid var(--border); cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-modal-cancel:hover { background: rgba(255,255,255,0.08); }
+
+  .error-msg {
+    background: rgba(240,149,149,0.1); border: 1px solid rgba(240,149,149,0.3);
+    color: #f09595; padding: 0.75rem 1rem; border-radius: var(--radius);
+    font-size: 0.8rem; margin-bottom: 1rem; display: none;
+  }
+
+  .success-msg {
+    background: rgba(110,231,183,0.1); border: 1px solid rgba(110,231,183,0.3);
+    color: #6ee7b7; padding: 0.75rem 1rem; border-radius: var(--radius);
+    font-size: 0.8rem; margin-bottom: 1rem; display: none;
+  }
+
+  .loading-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
+
+  .client-view-notice {
+    background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2);
+    border-radius: var(--radius); padding: 0.85rem 1rem;
+    font-size: 0.78rem; color: #fbbf24; margin-bottom: 1rem; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <a href="/index.html" class="logo">okify<span>.</span></a>
+  </div>
+  <nav class="sidebar-nav" id="sidebar-nav">
+    <span class="nav-section-label">Main</span>
+    <a class="nav-item" href="/dashboard-editor.html"><span class="nav-icon">⊞</span> Dashboard</a>
+    <a class="nav-item active" href="/browse-jobs.html"><span class="nav-icon">◎</span> Browse jobs</a>
+    <a class="nav-item" href="/my-profile.html"><span class="nav-icon">◉</span> My profile</a>
+    <span class="nav-section-label">My work</span>
+    <a class="nav-item" href="#"><span class="nav-icon">◈</span> Active jobs</a>
+    <a class="nav-item" href="#"><span class="nav-icon">⟳</span> Applications</a>
+    <a class="nav-item" href="#"><span class="nav-icon">✓</span> Completed</a>
+    <span class="nav-section-label">Account</span>
+    <a class="nav-item" href="#"><span class="nav-icon">◉</span> Messages</a>
+    <a class="nav-item" href="#"><span class="nav-icon">⚙</span> Settings</a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="user-info">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <div>
+        <div class="user-name" id="user-name">Loading...</div>
+        <div class="user-role" id="user-role">Editor</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="handleLogout()"><span>↪</span> Log out</button>
+  </div>
+</aside>
+
+<main class="main">
+  <a href="javascript:history.back()" class="back-btn">← Back to listings</a>
+
+  <div id="error-msg" class="error-msg"></div>
+  <div id="success-msg" class="success-msg"></div>
+  <div id="loading" class="loading-state">Loading job...</div>
+
+  <div class="content-layout" id="content" style="display:none;">
+    <div>
+      <!-- JOB HEADER -->
+      <div class="main-card">
+        <div class="job-header">
+          <div class="job-marketplace-badge" id="marketplace-badge">Standard</div>
+          <h1 class="job-title" id="job-title">Loading...</h1>
+          <div class="job-meta-row">
+            <div class="meta-item"><span class="meta-icon">◈</span><span id="meta-type">—</span></div>
+            <div class="meta-item"><span class="meta-icon">◷</span><span id="meta-length">— min</span></div>
+            <div class="meta-item"><span class="meta-icon">⏰</span><span id="meta-deadline">—</span></div>
+            <div class="meta-item"><span class="meta-icon">◉</span><span id="meta-posted">—</span></div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section-label">Description</div>
+        <div class="job-description" id="job-description">—</div>
+
+        <div class="divider"></div>
+
+        <div class="section-label">Job details</div>
+        <div class="details-grid">
+          <div class="detail-item">
+            <div class="detail-label">Budget</div>
+            <div class="detail-value" id="detail-budget">—</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Complexity</div>
+            <div class="detail-value" id="detail-complexity">—</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Deadline</div>
+            <div class="detail-value" id="detail-deadline">—</div>
+          </div>
+        </div>
+
+        <div style="margin-top:1rem;">
+          <div class="section-label">Tags</div>
+          <div class="tags-row" id="tags-row"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <div class="right-sidebar">
+      <!-- ACTION CARD -->
+      <div class="action-card">
+        <div class="price-display">
+          <div class="price-amount" id="price-display">£—</div>
+          <div class="price-label">Client budget</div>
+        </div>
+
+        <div class="action-details">
+          <div class="action-detail-row">
+            <span>You receive</span>
+            <span id="editor-receives">—</span>
+          </div>
+          <div class="action-detail-row">
+            <span>Okify fee</span>
+            <span id="okify-fee">15%</span>
+          </div>
+          <div class="action-detail-row">
+            <span>Marketplace</span>
+            <span id="marketplace-label">Standard</span>
+          </div>
+        </div>
+
+        <div id="client-notice" class="client-view-notice" style="display:none;">
+          This is your job listing. Editors can apply below.
+        </div>
+
+        <button class="btn-apply" id="apply-btn" onclick="openApplyModal()">Apply for this job</button>
+        <button class="btn-message" id="message-btn" onclick="messageClient()">Message client</button>
+        <p class="apply-note" id="apply-note">Payment is held in escrow until you deliver and the client approves.</p>
+      </div>
+
+      <!-- CLIENT CARD -->
+      <div class="client-card">
+        <div class="client-card-title">Posted by</div>
+        <div class="client-info">
+          <div class="client-avatar" id="client-avatar">?</div>
+          <div>
+            <div class="client-name" id="client-name">Loading...</div>
+            <div class="client-joined" id="client-joined">—</div>
+          </div>
+        </div>
+        <div class="client-stats">
+          <div class="client-stat">
+            <div class="client-stat-num" id="client-jobs">0</div>
+            <div class="client-stat-label">Jobs</div>
+          </div>
+          <div class="client-stat">
+            <div class="client-stat-num" id="client-completed">0</div>
+            <div class="client-stat-label">Done</div>
+          </div>
+          <div class="client-stat">
+            <div class="client-stat-num" id="client-rating">—</div>
+            <div class="client-stat-label">Rating</div>
+          </div>
+        </div>
+        <a href="#" class="view-profile-btn" id="view-client-profile">View client profile →</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- APPLY MODAL -->
+<div class="modal-overlay" id="apply-modal">
+  <div class="modal">
+    <h2 class="modal-title">Apply for this job</h2>
+    <p class="modal-sub">Write a short pitch telling the client why you're the right editor for this job.</p>
+
+    <div class="modal-group">
+      <label class="modal-label">Your pitch</label>
+      <textarea class="modal-textarea" id="pitch-text" placeholder="Hi, I'd love to edit this video. I have experience with..."></textarea>
+    </div>
+
+    <div class="modal-group">
+      <label class="modal-label">Your rate for this job (£)</label>
+      <input type="number" class="modal-input" id="proposed-rate" placeholder="Enter your rate...">
+    </div>
+
+    <div class="modal-group">
+      <label class="modal-label">Estimated delivery time</label>
+      <input type="text" class="modal-input" id="delivery-time" placeholder="e.g. 2-3 days">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeApplyModal()">Cancel</button>
+      <button class="btn-modal-submit" id="submit-application" onclick="submitApplication()">Submit application</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'YOUR_SUPABASE_URL'
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'
+  const { createClient } = supabase
+  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+  let currentJob = null
+  let currentUser = null
+  let userRole = 'editor'
+  let jobId = null
+
+  function getJobIdFromUrl() {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('id')
+  }
+
+  function timeAgo(dateStr) {
+    const now = new Date()
+    const date = new Date(dateStr)
+    const diff = Math.floor((now - date) / 1000)
+    if (diff < 60) return 'Just now'
+    if (diff < 3600) return Math.floor(diff/60) + 'm ago'
+    if (diff < 86400) return Math.floor(diff/3600) + 'h ago'
+    return Math.floor(diff/86400) + 'd ago'
+  }
+
+  function formatDate(dateStr) {
+    return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  }
+
+  function getComplexityClass(complexity) {
+    if (!complexity) return 'complexity-basic'
+    const c = complexity.toLowerCase()
+    if (c.includes('high')) return 'complexity-high'
+    if (c.includes('standard')) return 'complexity-standard'
+    return 'complexity-basic'
+  }
+
+  function renderJob(job, clientProfile) {
+    const isOwner = currentUser && job.client_id === currentUser.id
+    const isFree = job.marketplace === 'free'
+    const budget = job.budget || 0
+    const editorReceives = (budget * 0.85).toFixed(2)
+
+    // Badge
+    const badge = document.getElementById('marketplace-badge')
+    badge.textContent = isFree ? 'Free zone' : 'Standard'
+    badge.className = 'job-marketplace-badge ' + (isFree ? 'badge-free' : 'badge-standard')
+
+    document.getElementById('job-title').textContent = job.title || 'Untitled job'
+    document.getElementById('meta-type').textContent = job.content_type || '—'
+    document.getElementById('meta-length').textContent = (job.video_length || '—') + ' min'
+    document.getElementById('meta-deadline').textContent = job.deadline || 'Flexible'
+    document.getElementById('meta-posted').textContent = 'Posted ' + timeAgo(job.created_at)
+    document.getElementById('job-description').textContent = job.description || 'No description provided.'
+    document.getElementById('detail-budget').textContent = budget ? '£' + budget : '—'
+    document.getElementById('detail-deadline').textContent = job.deadline || 'Flexible'
+
+    const complexityEl = document.getElementById('detail-complexity')
+    complexityEl.innerHTML = `<span class="complexity-badge ${getComplexityClass(job.complexity)}">${job.complexity || 'Basic'}</span>`
+
+    // Tags
+    const tagsRow = document.getElementById('tags-row')
+    if (job.tags && job.tags.length > 0) {
+      tagsRow.innerHTML = job.tags.map(t => `<span class="tag ${isFree ? 'free' : ''}">${t}</span>`).join('')
+    } else {
+      tagsRow.innerHTML = '<span style="font-size:0.78rem; color:var(--text-dim);">No tags</span>'
+    }
+
+    // Price
+    document.getElementById('price-display').textContent = budget ? '£' + budget : '—'
+    document.getElementById('editor-receives').textContent = budget ? '£' + editorReceives : '—'
+    document.getElementById('marketplace-label').textContent = isFree ? 'Free zone' : 'Standard'
+
+    // Apply button
+    const applyBtn = document.getElementById('apply-btn')
+    if (isFree) applyBtn.classList.add('free')
+
+    if (isOwner) {
+      document.getElementById('client-notice').style.display = 'block'
+      applyBtn.style.display = 'none'
+      document.getElementById('message-btn').style.display = 'none'
+      document.getElementById('apply-note').style.display = 'none'
+    } else if (userRole === 'client') {
+      applyBtn.style.display = 'none'
+      document.getElementById('message-btn').textContent = 'Message client'
+      document.getElementById('apply-note').textContent = 'Sign in as an editor to apply for jobs.'
+    }
+
+    // Client info
+    if (clientProfile) {
+      const initial = (clientProfile.username || '?').charAt(0).toUpperCase()
+      document.getElementById('client-avatar').textContent = initial
+      document.getElementById('client-name').textContent = clientProfile.username || 'Unknown'
+      document.getElementById('client-joined').textContent = 'Joined ' + formatDate(clientProfile.created_at)
+      document.getElementById('view-client-profile').href = '/client-profile.html?id=' + job.client_id
+    }
+
+    document.getElementById('loading').style.display = 'none'
+    document.getElementById('content').style.display = 'grid'
+  }
+
+  function openApplyModal() {
+    if (!currentUser) { window.location.href = '/login.html'; return }
+    document.getElementById('apply-modal').classList.add('open')
+    if (currentJob) {
+      document.getElementById('proposed-rate').value = currentJob.budget || ''
+    }
+  }
+
+  function closeApplyModal() {
+    document.getElementById('apply-modal').classList.remove('open')
+  }
+
+  async function submitApplication() {
+    const pitch = document.getElementById('pitch-text').value.trim()
+    const rate = document.getElementById('proposed-rate').value
+    const delivery = document.getElementById('delivery-time').value.trim()
+    const btn = document.getElementById('submit-application')
+
+    if (!pitch) { alert('Please write a pitch.'); return }
+    if (!rate) { alert('Please enter your rate.'); return }
+    if (!delivery) { alert('Please enter your estimated delivery time.'); return }
+
+    btn.disabled = true
+    btn.textContent = 'Submitting...'
+
+    const { error } = await client.from('applications').insert([{
+      job_id: jobId,
+      editor_id: currentUser.id,
+      pitch,
+      proposed_rate: parseFloat(rate),
+      delivery_time: delivery,
+      status: 'pending'
+    }])
+
+    if (error) {
+      alert('Something went wrong. Please try again.')
+      btn.disabled = false
+      btn.textContent = 'Submit application'
+      return
+    }
+
+    closeApplyModal()
+    const successEl = document.getElementById('success-msg')
+    successEl.textContent = 'Application submitted successfully! The client will be in touch.'
+    successEl.style.display = 'block'
+    document.getElementById('apply-btn').disabled = true
+    document.getElementById('apply-btn').textContent = 'Applied'
+    window.scrollTo(0, 0)
+  }
+
+  function messageClient() {
+    window.location.href = '/messages.html?user=' + (currentJob ? currentJob.client_id : '')
+  }
+
+  async function init() {
+    jobId = getJobIdFromUrl()
+    if (!jobId) { window.location.href = '/browse-jobs.html'; return }
+
+    const { data: { session } } = await client.auth.getSession()
+    if (!session) { window.location.href = '/login.html'; return }
+
+    currentUser = session.user
+
+    const { data: profile } = await client
+      .from('profiles')
+      .select('username, account_type')
+      .eq('id', session.user.id)
+      .single()
+
+    if (profile) {
+      userRole = profile.account_type
+      const username = profile.username || session.user.email.split('@')[0]
+      document.getElementById('user-name').textContent = username
+      document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase()
+      document.getElementById('user-role').textContent = profile.account_type === 'editor' ? 'Editor' : 'Client'
+
+      if (profile.account_type === 'client') {
+        document.getElementById('sidebar-nav').innerHTML = `
+          <span class="nav-section-label">Main</span>
+          <a class="nav-item" href="/dashboard-client.html"><span class="nav-icon">⊞</span> Dashboard</a>
+          <a class="nav-item" href="/post-job.html"><span class="nav-icon">+</span> Post a job</a>
+          <a class="nav-item active" href="/browse-jobs.html"><span class="nav-icon">◎</span> Browse</a>
+          <span class="nav-section-label">My jobs</span>
+          <a class="nav-item" href="#"><span class="nav-icon">◈</span> Active jobs</a>
+          <a class="nav-item" href="#"><span class="nav-icon">✓</span> Completed</a>
+          <span class="nav-section-label">Account</span>
+          <a class="nav-item" href="#"><span class="nav-icon">◉</span> Messages</a>
+          <a class="nav-item" href="#"><span class="nav-icon">⚙</span> Settings</a>
+        `
+      }
+    }
+
+    const { data: job, error } = await client
+      .from('jobs')
+      .select('*')
+      .eq('id', jobId)
+      .single()
+
+    if (error || !job) {
+      document.getElementById('loading').textContent = 'Job not found.'
+      return
+    }
+
+    currentJob = job
+
+    const { data: clientProfile } = await client
+      .from('profiles')
+      .select('username, created_at')
+      .eq('id', job.client_id)
+      .single()
+
+    const { data: clientJobCount } = await client
+      .from('jobs')
+      .select('id', { count: 'exact' })
+      .eq('client_id', job.client_id)
+
+    if (clientJobCount) {
+      document.getElementById('client-jobs').textContent = clientJobCount.length
+    }
+
+    renderJob(job, clientProfile)
+  }
+
+  async function handleLogout() {
+    await client.auth.signOut()
+    window.location.href = '/index.html'
+  }
+
+  document.getElementById('apply-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeApplyModal()
+  })
+
+  init()
+</script>
+
+</body>
+</html>
