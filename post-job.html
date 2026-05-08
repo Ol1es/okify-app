@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Okify — Post a Job</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,50 50,95 5,50' fill='%238b5cf6'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e18;
+    --bg-2: #0b0b14;
+    --bg-3: #13131f;
+    --bg-4: #1a1a2e;
+    --purple: #8b5cf6;
+    --purple-dim: #7c3aed;
+    --purple-bright: #a78bfa;
+    --blue: #2563eb;
+    --blue-bright: #60a5fa;
+    --text: #e8e6f0;
+    --text-muted: #6b6980;
+    --text-dim: #4a4860;
+    --text-dimmer: #3a3a52;
+    --border: rgba(255,255,255,0.07);
+    --border-purple: rgba(139,92,246,0.2);
+    --sidebar-width: 240px;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  .sidebar {
+    width: var(--sidebar-width);
+    background: var(--bg-2);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 50;
+  }
+
+  .sidebar-logo { padding: 1.5rem; border-bottom: 1px solid var(--border); }
+
+  .logo {
+    font-size: 1.25rem; font-weight: 800; letter-spacing: -0.03em;
+    color: #fff; text-decoration: none;
+  }
+  .logo span { color: var(--purple); }
+
+  .sidebar-nav {
+    flex: 1; padding: 1rem 0.75rem;
+    display: flex; flex-direction: column; gap: 0.2rem;
+  }
+
+  .nav-section-label {
+    font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-dim);
+    padding: 0.5rem 0.75rem; margin-top: 0.5rem;
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 0.6rem 0.75rem; border-radius: 8px;
+    color: var(--text-muted); text-decoration: none;
+    font-size: 0.85rem; font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+  .nav-item.active { background: rgba(139,92,246,0.12); color: var(--purple-bright); }
+  .nav-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+
+  .sidebar-bottom { padding: 1rem 0.75rem; border-top: 1px solid var(--border); }
+
+  .user-info {
+    display: flex; align-items: center; gap: 0.65rem;
+    padding: 0.6rem 0.75rem; border-radius: 8px;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .user-info:hover { background: rgba(255,255,255,0.04); }
+
+  .user-avatar {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--purple); display: flex; align-items: center;
+    justify-content: center; font-size: 0.75rem; font-weight: 700;
+    color: #fff; flex-shrink: 0;
+  }
+
+  .user-name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+  .user-role { font-size: 0.68rem; color: var(--text-dim); }
+
+  .logout-btn {
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 0.6rem 0.75rem; border-radius: 8px;
+    color: var(--text-dim); font-size: 0.82rem; font-weight: 500;
+    cursor: pointer; transition: color 0.15s, background 0.15s;
+    margin-top: 0.25rem; border: none; background: none; width: 100%;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .logout-btn:hover { color: #f09595; background: rgba(240,149,149,0.06); }
+
+  .main {
+    margin-left: var(--sidebar-width);
+    flex: 1; padding: 2.5rem 2rem;
+    max-width: calc(100vw - var(--sidebar-width));
+  }
+
+  .page-header { margin-bottom: 2rem; }
+  .page-title { font-size: 1.4rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; margin-bottom: 0.3rem; }
+  .page-sub { font-size: 0.85rem; color: var(--text-muted); }
+
+  .form-layout {
+    display: grid; grid-template-columns: 1fr 320px; gap: 1.5rem;
+    align-items: flex-start;
+  }
+
+  .form-card {
+    background: var(--bg-3); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.75rem;
+  }
+
+  .form-section-title {
+    font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-dim);
+    margin-bottom: 1.25rem; padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .form-group { margin-bottom: 1.25rem; }
+
+  .form-group:last-child { margin-bottom: 0; }
+
+  label {
+    display: block; font-size: 0.78rem; font-weight: 600;
+    color: var(--text-muted); margin-bottom: 0.45rem; letter-spacing: 0.02em;
+  }
+
+  .label-optional {
+    font-size: 0.68rem; color: var(--text-dim); font-weight: 400; margin-left: 0.3rem;
+  }
+
+  input[type="text"],
+  input[type="number"],
+  textarea,
+  select {
+    width: 100%;
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 0.78rem 1rem;
+    border-radius: var(--radius); font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.9rem; outline: none; transition: border-color 0.2s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: rgba(139,92,246,0.5); }
+  input::placeholder, textarea::placeholder { color: var(--text-dim); }
+  textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+  select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b6980' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.85rem center; }
+  select option { background: #13131f; }
+
+  .input-hint { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.35rem; line-height: 1.5; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+
+  /* COMPLEXITY SELECTOR */
+  .complexity-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.65rem; }
+
+  .complexity-option {
+    background: var(--bg); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 0.85rem 0.75rem;
+    cursor: pointer; text-align: center; transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+  }
+  .complexity-option:hover { border-color: rgba(139,92,246,0.3); }
+  .complexity-option.selected { border-color: var(--purple); background: rgba(139,92,246,0.08); }
+
+  .complexity-name { font-size: 0.82rem; font-weight: 700; color: #fff; margin-bottom: 0.2rem; }
+  .complexity-option.selected .complexity-name { color: var(--purple-bright); }
+  .complexity-desc { font-size: 0.65rem; color: var(--text-dim); line-height: 1.4; }
+
+  /* MARKETPLACE SELECTOR */
+  .marketplace-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
+
+  .marketplace-option {
+    background: var(--bg); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 1rem;
+    cursor: pointer; transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+  }
+  .marketplace-option:hover { border-color: rgba(139,92,246,0.3); }
+  .marketplace-option.selected.standard { border-color: var(--purple); background: rgba(139,92,246,0.08); }
+  .marketplace-option.selected.free { border-color: var(--blue); background: rgba(37,99,235,0.08); }
+
+  .marketplace-name { font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 0.2rem; }
+  .marketplace-option.selected.standard .marketplace-name { color: var(--purple-bright); }
+  .marketplace-option.selected.free .marketplace-name { color: var(--blue-bright); }
+  .marketplace-desc { font-size: 0.7rem; color: var(--text-dim); line-height: 1.5; }
+
+  /* TAGS */
+  .tags-input-wrap {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 0.5rem;
+    display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;
+    transition: border-color 0.2s; cursor: text;
+  }
+  .tags-input-wrap:focus-within { border-color: rgba(139,92,246,0.5); }
+
+  .tag-chip {
+    background: rgba(139,92,246,0.15); color: var(--purple-bright);
+    padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.75rem;
+    font-weight: 500; display: flex; align-items: center; gap: 0.3rem;
+  }
+  .tag-remove { cursor: pointer; opacity: 0.7; font-size: 0.8rem; }
+  .tag-remove:hover { opacity: 1; }
+
+  .tag-input {
+    background: none; border: none; color: var(--text); outline: none;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.85rem;
+    min-width: 120px; flex: 1; padding: 0.3rem 0.4rem;
+  }
+  .tag-input::placeholder { color: var(--text-dim); }
+
+  /* BUDGET */
+  .budget-input-wrap {
+    position: relative;
+  }
+  .budget-symbol {
+    position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); font-weight: 600; font-size: 0.9rem;
+    pointer-events: none;
+  }
+  .budget-field {
+    padding-left: 1.75rem !important;
+  }
+
+  .min-price-display {
+    background: rgba(139,92,246,0.06); border: 1px solid var(--border-purple);
+    border-radius: var(--radius); padding: 0.75rem 1rem;
+    margin-top: 0.5rem; display: none;
+  }
+  .min-price-display p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
+  .min-price-display strong { color: var(--purple-bright); }
+
+  /* PREVIEW CARD */
+  .preview-card {
+    background: var(--bg-3); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.35rem;
+    position: sticky; top: 2rem;
+  }
+
+  .preview-title-label {
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 1rem;
+  }
+
+  .preview-job-card {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1rem; margin-bottom: 1rem;
+  }
+
+  .preview-job-title { font-size: 0.92rem; font-weight: 700; color: #fff; margin-bottom: 0.3rem; }
+  .preview-job-meta { font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.5rem; }
+  .preview-job-desc { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 0.65rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .preview-job-footer { display: flex; align-items: center; justify-content: space-between; }
+  .preview-price { font-size: 1rem; font-weight: 800; color: var(--purple); }
+  .preview-tags { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+  .preview-tag { font-size: 0.62rem; font-weight: 500; background: rgba(139,92,246,0.1); color: var(--purple-bright); padding: 0.15rem 0.5rem; border-radius: 4px; }
+
+  .submit-section { margin-top: 1rem; }
+
+  .btn-submit {
+    width: 100%; padding: 0.85rem; border-radius: var(--radius);
+    background: var(--purple); color: #fff;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700;
+    font-size: 0.92rem; border: none; cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .btn-submit:hover { background: var(--purple-dim); transform: scale(0.99); }
+  .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .submit-note { font-size: 0.72rem; color: var(--text-dim); text-align: center; margin-top: 0.65rem; line-height: 1.5; }
+
+  .error-msg {
+    background: rgba(240,149,149,0.1); border: 1px solid rgba(240,149,149,0.3);
+    color: #f09595; padding: 0.75rem 1rem; border-radius: var(--radius);
+    font-size: 0.8rem; margin-bottom: 1rem; display: none; line-height: 1.5;
+  }
+
+  .success-msg {
+    background: rgba(110,231,183,0.1); border: 1px solid rgba(110,231,183,0.3);
+    color: #6ee7b7; padding: 0.75rem 1rem; border-radius: var(--radius);
+    font-size: 0.8rem; margin-bottom: 1rem; display: none; line-height: 1.5;
+  }
+
+  .pricing-guide {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1rem; margin-top: 1rem;
+  }
+  .pricing-guide-title { font-size: 0.72rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.6rem; }
+  .pricing-row { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); padding: 0.25rem 0; }
+  .pricing-row span:last-child { color: var(--purple-bright); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <a href="/index.html" class="logo">okify<span>.</span></a>
+  </div>
+  <nav class="sidebar-nav">
+    <span class="nav-section-label">Main</span>
+    <a class="nav-item" href="/dashboard-client.html"><span class="nav-icon">⊞</span> Dashboard</a>
+    <a class="nav-item active" href="/post-job.html"><span class="nav-icon">+</span> Post a job</a>
+    <a class="nav-item" href="/browse-editors.html"><span class="nav-icon">◎</span> Browse editors</a>
+    <span class="nav-section-label">My jobs</span>
+    <a class="nav-item" href="#"><span class="nav-icon">◈</span> Active jobs</a>
+    <a class="nav-item" href="#"><span class="nav-icon">✓</span> Completed</a>
+    <span class="nav-section-label">Account</span>
+    <a class="nav-item" href="#"><span class="nav-icon">◉</span> Messages</a>
+    <a class="nav-item" href="#"><span class="nav-icon">⚙</span> Settings</a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="user-info">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <div>
+        <div class="user-name" id="user-name">Loading...</div>
+        <div class="user-role">Client</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="handleLogout()"><span>↪</span> Log out</button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <h1 class="page-title">Post a job</h1>
+    <p class="page-sub">Fill in the details and let editors come to you.</p>
+  </div>
+
+  <div class="error-msg" id="error-msg"></div>
+  <div class="success-msg" id="success-msg"></div>
+
+  <div class="form-layout">
+    <!-- FORM -->
+    <div>
+      <!-- JOB DETAILS -->
+      <div class="form-card" style="margin-bottom:1.25rem;">
+        <div class="form-section-title">Job details</div>
+
+        <div class="form-group">
+          <label for="title">Job title</label>
+          <input type="text" id="title" placeholder="e.g. YouTube vlog — 15 min travel video" oninput="updatePreview()">
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description <span class="label-optional">(optional)</span></label>
+          <textarea id="description" placeholder="Describe the style you want, any references, specific requirements..." oninput="updatePreview()"></textarea>
+        </div>
+
+        <div class="two-col">
+          <div class="form-group">
+            <label for="content-type">Content type</label>
+            <select id="content-type" onchange="updatePreview()">
+              <option value="">Select type...</option>
+              <option value="YouTube">YouTube</option>
+              <option value="TikTok">TikTok / Reels</option>
+              <option value="Commercial">Commercial</option>
+              <option value="Podcast">Podcast</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="video-length">Video length (minutes)</label>
+            <input type="number" id="video-length" placeholder="e.g. 12" min="1" oninput="updatePricing(); updatePreview()">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Complexity level</label>
+          <div class="complexity-grid">
+            <div class="complexity-option selected" id="complexity-basic" onclick="selectComplexity('Basic')">
+              <div class="complexity-name">Basic</div>
+              <div class="complexity-desc">Simple cuts, transitions, basic colour</div>
+            </div>
+            <div class="complexity-option" id="complexity-standard" onclick="selectComplexity('Standard')">
+              <div class="complexity-name">Standard</div>
+              <div class="complexity-desc">Colour grade, sound design, captions</div>
+            </div>
+            <div class="complexity-option" id="complexity-high" onclick="selectComplexity('Highly edited')">
+              <div class="complexity-name">Highly edited</div>
+              <div class="complexity-desc">Motion graphics, VFX, animations, effects</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="deadline">Deadline</label>
+          <select id="deadline" onchange="updatePreview()">
+            <option value="Flexible">Flexible</option>
+            <option value="Within 24 hours">Within 24 hours</option>
+            <option value="Within 3 days">Within 3 days</option>
+            <option value="Within a week">Within a week</option>
+            <option value="Within 2 weeks">Within 2 weeks</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Tags <span class="label-optional">(press Enter to add)</span></label>
+          <div class="tags-input-wrap" onclick="document.getElementById('tag-input').focus()">
+            <div id="tags-container"></div>
+            <input type="text" class="tag-input" id="tag-input" placeholder="e.g. colour grade, fast cuts..." onkeydown="handleTagInput(event)">
+          </div>
+        </div>
+      </div>
+
+      <!-- MARKETPLACE & BUDGET -->
+      <div class="form-card">
+        <div class="form-section-title">Marketplace & budget</div>
+
+        <div class="form-group">
+          <label>Which marketplace?</label>
+          <div class="marketplace-grid">
+            <div class="marketplace-option selected standard" id="market-standard" onclick="selectMarketplace('standard')">
+              <div class="marketplace-name">Standard</div>
+              <div class="marketplace-desc">Minimum pricing enforced. For quality work done properly.</div>
+            </div>
+            <div class="marketplace-option free" id="market-free" onclick="selectMarketplace('free')">
+              <div class="marketplace-name">Free zone</div>
+              <div class="marketplace-desc">No minimum price. Quick jobs, portfolio work, budget projects.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="budget">Your budget</label>
+          <div class="budget-input-wrap">
+            <span class="budget-symbol">£</span>
+            <input type="number" id="budget" class="budget-field" placeholder="0" min="0" oninput="updatePreview()">
+          </div>
+          <div class="min-price-display" id="min-price-display">
+            <p>Minimum price for this job: <strong id="min-price-text">£0</strong>. Your budget must meet or exceed this.</p>
+          </div>
+          <p class="input-hint" id="budget-hint">Set your budget. Editors will see this when applying.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREVIEW + SUBMIT -->
+    <div>
+      <div class="preview-card">
+        <div class="preview-title-label">Live preview</div>
+        <div class="preview-job-card">
+          <div class="preview-job-title" id="preview-title">Your job title</div>
+          <div class="preview-job-meta" id="preview-meta">Content type · — min · Flexible</div>
+          <div class="preview-tags" id="preview-tags"></div>
+          <div class="preview-job-desc" id="preview-desc">Your description will appear here...</div>
+          <div class="preview-job-footer">
+            <div class="preview-price" id="preview-price">£—</div>
+            <span id="preview-complexity" style="font-size:0.72rem; color:var(--text-dim);">Basic</span>
+          </div>
+        </div>
+
+        <div class="pricing-guide" id="pricing-guide">
+          <div class="pricing-guide-title">Standard minimum prices</div>
+          <div class="pricing-row"><span>Under 5 min · Basic</span><span>£20</span></div>
+          <div class="pricing-row"><span>5-15 min · Basic</span><span>£40</span></div>
+          <div class="pricing-row"><span>15-30 min · Basic</span><span>£70</span></div>
+          <div class="pricing-row"><span>30+ min · Basic</span><span>£100</span></div>
+          <div class="pricing-row"><span>Standard complexity</span><span>×1.5</span></div>
+          <div class="pricing-row"><span>Highly edited</span><span>×2.5</span></div>
+        </div>
+
+        <div class="submit-section">
+          <button class="btn-submit" id="submit-btn" onclick="submitJob()">Post job</button>
+          <p class="submit-note">Your job will be visible to editors immediately after posting.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const SUPABASE_URL = 'YOUR_SUPABASE_URL'
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'
+  const { createClient } = supabase
+  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+  let selectedComplexity = 'Basic'
+  let selectedMarketplace = 'standard'
+  let tags = []
+  let currentMinPrice = 0
+  let userId = null
+
+  function selectComplexity(value) {
+    selectedComplexity = value
+    document.getElementById('complexity-basic').classList.toggle('selected', value === 'Basic')
+    document.getElementById('complexity-standard').classList.toggle('selected', value === 'Standard')
+    document.getElementById('complexity-high').classList.toggle('selected', value === 'Highly edited')
+    updatePricing()
+    updatePreview()
+  }
+
+  function selectMarketplace(value) {
+    selectedMarketplace = value
+    document.getElementById('market-standard').classList.toggle('selected', value === 'standard')
+    document.getElementById('market-standard').classList.toggle('standard', true)
+    document.getElementById('market-free').classList.toggle('selected', value === 'free')
+    document.getElementById('market-free').classList.toggle('free', true)
+
+    const minDisplay = document.getElementById('min-price-display')
+    const pricingGuide = document.getElementById('pricing-guide')
+    const budgetHint = document.getElementById('budget-hint')
+
+    if (value === 'standard') {
+      minDisplay.style.display = 'block'
+      pricingGuide.style.display = 'block'
+      budgetHint.textContent = 'Must meet the minimum price for your job type.'
+      updatePricing()
+    } else {
+      minDisplay.style.display = 'none'
+      pricingGuide.style.display = 'none'
+      budgetHint.textContent = 'No minimum in the free zone. Set any budget.'
+      currentMinPrice = 0
+    }
+    updatePreview()
+  }
+
+  function calculateMinPrice(length, complexity) {
+    let base = 20
+    if (length >= 30) base = 100
+    else if (length >= 15) base = 70
+    else if (length >= 5) base = 40
+
+    let multiplier = 1
+    if (complexity === 'Standard') multiplier = 1.5
+    else if (complexity === 'Highly edited') multiplier = 2.5
+
+    return Math.round(base * multiplier)
+  }
+
+  function updatePricing() {
+    if (selectedMarketplace !== 'standard') return
+
+    const length = parseFloat(document.getElementById('video-length').value) || 0
+    currentMinPrice = length > 0 ? calculateMinPrice(length, selectedComplexity) : 0
+
+    const minDisplay = document.getElementById('min-price-display')
+    const minText = document.getElementById('min-price-text')
+
+    if (length > 0) {
+      minDisplay.style.display = 'block'
+      minText.textContent = '£' + currentMinPrice
+
+      const budgetField = document.getElementById('budget')
+      if (!budgetField.value || parseFloat(budgetField.value) < currentMinPrice) {
+        budgetField.value = currentMinPrice
+      }
+    } else {
+      minDisplay.style.display = 'none'
+    }
+
+    updatePreview()
+  }
+
+  function handleTagInput(e) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      const val = e.target.value.trim().replace(',', '')
+      if (val && tags.length < 6 && !tags.includes(val)) {
+        tags.push(val)
+        renderTags()
+        e.target.value = ''
+        updatePreview()
+      }
+    }
+    if (e.key === 'Backspace' && !e.target.value && tags.length > 0) {
+      tags.pop()
+      renderTags()
+      updatePreview()
+    }
+  }
+
+  function removeTag(idx) {
+    tags.splice(idx, 1)
+    renderTags()
+    updatePreview()
+  }
+
+  function renderTags() {
+    const container = document.getElementById('tags-container')
+    container.innerHTML = tags.map((t, i) => `
+      <span class="tag-chip">${t} <span class="tag-remove" onclick="removeTag(${i})">×</span></span>
+    `).join('')
+  }
+
+  function updatePreview() {
+    const title = document.getElementById('title').value || 'Your job title'
+    const desc = document.getElementById('description').value || 'Your description will appear here...'
+    const contentType = document.getElementById('content-type').value || 'Content type'
+    const length = document.getElementById('video-length').value || '—'
+    const deadline = document.getElementById('deadline').value || 'Flexible'
+    const budget = document.getElementById('budget').value
+
+    document.getElementById('preview-title').textContent = title
+    document.getElementById('preview-desc').textContent = desc
+    document.getElementById('preview-meta').textContent = `${contentType} · ${length} min · ${deadline}`
+    document.getElementById('preview-price').textContent = budget ? '£' + budget : '£—'
+    document.getElementById('preview-complexity').textContent = selectedComplexity
+
+    const previewTags = document.getElementById('preview-tags')
+    previewTags.innerHTML = tags.map(t => `<span class="preview-tag">${t}</span>`).join('')
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-msg')
+    el.textContent = msg; el.style.display = 'block'
+    document.getElementById('success-msg').style.display = 'none'
+    window.scrollTo(0, 0)
+  }
+
+  function showSuccess(msg) {
+    const el = document.getElementById('success-msg')
+    el.textContent = msg; el.style.display = 'block'
+    document.getElementById('error-msg').style.display = 'none'
+    window.scrollTo(0, 0)
+  }
+
+  async function submitJob() {
+    const title = document.getElementById('title').value.trim()
+    const description = document.getElementById('description').value.trim()
+    const contentType = document.getElementById('content-type').value
+    const videoLength = parseFloat(document.getElementById('video-length').value)
+    const budget = parseFloat(document.getElementById('budget').value)
+    const deadline = document.getElementById('deadline').value
+    const btn = document.getElementById('submit-btn')
+
+    if (!title) { showError('Please add a job title.'); return }
+    if (!contentType) { showError('Please select a content type.'); return }
+    if (!videoLength || videoLength < 1) { showError('Please enter a valid video length.'); return }
+    if (!budget || budget < 1) { showError('Please enter a budget.'); return }
+
+    if (selectedMarketplace === 'standard' && budget < currentMinPrice) {
+      showError(`Budget must be at least £${currentMinPrice} for this job type on the standard marketplace.`)
+      return
+    }
+
+    btn.disabled = true
+    btn.textContent = 'Posting job...'
+
+    const { data, error } = await client.from('jobs').insert([{
+      client_id: userId,
+      title,
+      description,
+      content_type: contentType,
+      video_length: videoLength,
+      complexity: selectedComplexity,
+      budget,
+      marketplace: selectedMarketplace,
+      deadline,
+      tags,
+      status: 'open'
+    }]).select().single()
+
+    if (error) {
+      showError('Something went wrong. Please try again.')
+      btn.disabled = false
+      btn.textContent = 'Post job'
+      return
+    }
+
+    showSuccess('Job posted successfully! Editors can now apply.')
+    btn.textContent = 'Job posted!'
+
+    setTimeout(() => {
+      window.location.href = '/dashboard-client.html'
+    }, 2000)
+  }
+
+  async function init() {
+    const { data: { session } } = await client.auth.getSession()
+    if (!session) { window.location.href = '/login.html'; return }
+
+    userId = session.user.id
+
+    const { data: profile } = await client
+      .from('profiles')
+      .select('username, account_type')
+      .eq('id', session.user.id)
+      .single()
+
+    if (profile) {
+      if (profile.account_type === 'editor') {
+        window.location.href = '/dashboard-editor.html'
+        return
+      }
+      const username = profile.username || session.user.email.split('@')[0]
+      document.getElementById('user-name').textContent = username
+      document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase()
+    }
+
+    selectMarketplace('standard')
+  }
+
+  async function handleLogout() {
+    await client.auth.signOut()
+    window.location.href = '/index.html'
+  }
+
+  init()
+</script>
+
+</body>
+</html>
