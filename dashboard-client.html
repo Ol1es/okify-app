@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Okify — Dashboard</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,50 50,95 5,50' fill='%238b5cf6'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e18;
+    --bg-2: #0b0b14;
+    --bg-3: #13131f;
+    --bg-4: #1a1a2e;
+    --purple: #8b5cf6;
+    --purple-dim: #7c3aed;
+    --purple-bright: #a78bfa;
+    --text: #e8e6f0;
+    --text-muted: #6b6980;
+    --text-dim: #4a4860;
+    --text-dimmer: #3a3a52;
+    --border: rgba(255,255,255,0.07);
+    --border-purple: rgba(139,92,246,0.2);
+    --sidebar-width: 240px;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: var(--sidebar-width);
+    background: var(--bg-2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 50;
+  }
+
+  .sidebar-logo {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-size: 1.25rem; font-weight: 800; letter-spacing: -0.03em;
+    color: #fff; text-decoration: none;
+  }
+  .logo span { color: var(--purple); }
+
+  .sidebar-nav {
+    flex: 1; padding: 1rem 0.75rem;
+    display: flex; flex-direction: column; gap: 0.2rem;
+  }
+
+  .nav-section-label {
+    font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-dim);
+    padding: 0.5rem 0.75rem; margin-top: 0.5rem;
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 0.6rem 0.75rem; border-radius: 8px;
+    color: var(--text-muted); text-decoration: none;
+    font-size: 0.85rem; font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+    cursor: pointer;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+  .nav-item.active { background: rgba(139,92,246,0.12); color: var(--purple-bright); }
+  .nav-item.active .nav-icon { color: var(--purple); }
+
+  .nav-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+
+  .sidebar-bottom {
+    padding: 1rem 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .user-info {
+    display: flex; align-items: center; gap: 0.65rem;
+    padding: 0.6rem 0.75rem; border-radius: 8px;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .user-info:hover { background: rgba(255,255,255,0.04); }
+
+  .user-avatar {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--purple); display: flex; align-items: center;
+    justify-content: center; font-size: 0.75rem; font-weight: 700;
+    color: #fff; flex-shrink: 0;
+  }
+
+  .user-name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+  .user-role { font-size: 0.68rem; color: var(--text-dim); }
+
+  .logout-btn {
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 0.6rem 0.75rem; border-radius: 8px;
+    color: var(--text-dim); font-size: 0.82rem; font-weight: 500;
+    cursor: pointer; transition: color 0.15s, background 0.15s;
+    margin-top: 0.25rem; border: none; background: none; width: 100%;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .logout-btn:hover { color: #f09595; background: rgba(240,149,149,0.06); }
+
+  /* MAIN CONTENT */
+  .main {
+    margin-left: var(--sidebar-width);
+    flex: 1; padding: 2rem;
+    max-width: calc(100vw - var(--sidebar-width));
+  }
+
+  .page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 2rem;
+  }
+
+  .page-title { font-size: 1.4rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; }
+  .page-sub { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+  .btn-primary {
+    background: var(--purple); color: #fff;
+    padding: 0.65rem 1.25rem; border-radius: 8px;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.85rem;
+    text-decoration: none; border: none; cursor: pointer;
+    transition: background 0.2s; display: inline-flex; align-items: center; gap: 0.4rem;
+  }
+  .btn-primary:hover { background: var(--purple-dim); }
+
+  .btn-secondary {
+    background: rgba(255,255,255,0.05); color: var(--text);
+    padding: 0.6rem 1.1rem; border-radius: 8px;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600; font-size: 0.82rem;
+    text-decoration: none; border: 1px solid var(--border); cursor: pointer;
+    transition: background 0.2s, border-color 0.2s; display: inline-flex; align-items: center; gap: 0.4rem;
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.12); }
+
+  /* STATS */
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.85rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .stat-card {
+    background: var(--bg-3); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.25rem;
+  }
+
+  .stat-label { font-size: 0.72rem; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.5rem; }
+  .stat-value { font-size: 1.75rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; line-height: 1; }
+  .stat-sub { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.35rem; }
+  .stat-sub.up { color: #6ee7b7; }
+  .stat-sub.neutral { color: var(--text-dim); }
+
+  /* GRID LAYOUT */
+  .content-grid {
+    display: grid; grid-template-columns: 1fr 320px; gap: 1.25rem;
+  }
+
+  .section-card {
+    background: var(--bg-3); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.35rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.1rem;
+  }
+
+  .section-title { font-size: 0.92rem; font-weight: 700; color: #fff; }
+  .section-count { font-size: 0.72rem; color: var(--text-dim); background: var(--bg-4); padding: 0.2rem 0.55rem; border-radius: 4px; }
+
+  /* JOB CARDS */
+  .job-card {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1rem;
+    margin-bottom: 0.65rem; transition: border-color 0.2s;
+  }
+  .job-card:hover { border-color: var(--border-purple); }
+  .job-card:last-child { margin-bottom: 0; }
+
+  .job-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.5rem; }
+  .job-name { font-size: 0.88rem; font-weight: 600; color: #fff; }
+  .job-price { font-size: 0.88rem; font-weight: 700; color: var(--purple); }
+
+  .job-meta { font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.5rem; }
+
+  .job-status {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    font-size: 0.68rem; font-weight: 600; padding: 0.2rem 0.6rem;
+    border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .status-active { background: rgba(139,92,246,0.12); color: var(--purple-bright); }
+  .status-review { background: rgba(251,191,36,0.1); color: #fbbf24; }
+  .status-completed { background: rgba(110,231,183,0.1); color: #6ee7b7; }
+  .status-open { background: rgba(100,180,255,0.1); color: #64b4ff; }
+
+  .job-editor {
+    display: flex; align-items: center; gap: 0.5rem;
+    margin-top: 0.65rem; padding-top: 0.65rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .editor-avatar-sm {
+    width: 22px; height: 22px; border-radius: 5px;
+    background: var(--purple-dim); display: flex; align-items: center;
+    justify-content: center; font-size: 0.58rem; font-weight: 700; color: #fff;
+  }
+
+  .editor-name-sm { font-size: 0.72rem; color: var(--text-muted); }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center; padding: 2.5rem 1rem;
+  }
+  .empty-icon { font-size: 2rem; margin-bottom: 0.75rem; opacity: 0.4; }
+  .empty-title { font-size: 0.88rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.35rem; }
+  .empty-sub { font-size: 0.78rem; color: var(--text-dim); line-height: 1.6; }
+
+  /* SIDEBAR RIGHT */
+  .right-sidebar { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .quick-action {
+    background: var(--bg-3); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.35rem;
+  }
+
+  .quick-action h3 { font-size: 0.88rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem; }
+  .quick-action p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 1rem; }
+
+  .action-list { display: flex; flex-direction: column; gap: 0.4rem; }
+
+  .action-item {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.6rem 0.75rem; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 8px;
+    text-decoration: none; color: var(--text-muted);
+    font-size: 0.8rem; font-weight: 500;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .action-item:hover { border-color: var(--border-purple); color: var(--text); }
+
+  .tip-card {
+    background: rgba(139,92,246,0.06); border: 1px solid var(--border-purple);
+    border-radius: var(--radius-lg); padding: 1.25rem;
+  }
+  .tip-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--purple-bright); margin-bottom: 0.5rem; }
+  .tip-text { font-size: 0.78rem; color: var(--text-muted); line-height: 1.65; }
+
+  .tags { display: flex; gap: 0.3rem; margin-top: 0.5rem; flex-wrap: wrap; }
+  .tag { font-size: 0.62rem; font-weight: 500; background: rgba(139,92,246,0.1); color: var(--purple-bright); padding: 0.15rem 0.5rem; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <a href="/index.html" class="logo">okify<span>.</span></a>
+  </div>
+
+  <nav class="sidebar-nav">
+    <span class="nav-section-label">Main</span>
+    <a class="nav-item active" href="/dashboard-client.html">
+      <span class="nav-icon">⊞</span> Dashboard
+    </a>
+    <a class="nav-item" href="/post-job.html">
+      <span class="nav-icon">+</span> Post a job
+    </a>
+    <a class="nav-item" href="/browse-editors.html">
+      <span class="nav-icon">◎</span> Browse editors
+    </a>
+
+    <span class="nav-section-label">My jobs</span>
+    <a class="nav-item" href="#">
+      <span class="nav-icon">◈</span> Active jobs
+    </a>
+    <a class="nav-item" href="#">
+      <span class="nav-icon">✓</span> Completed
+    </a>
+
+    <span class="nav-section-label">Account</span>
+    <a class="nav-item" href="#">
+      <span class="nav-icon">◉</span> Messages
+    </a>
+    <a class="nav-item" href="#">
+      <span class="nav-icon">⚙</span> Settings
+    </a>
+  </nav>
+
+  <div class="sidebar-bottom">
+    <div class="user-info">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <div>
+        <div class="user-name" id="user-name">Loading...</div>
+        <div class="user-role">Client</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="handleLogout()">
+      <span>↪</span> Log out
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Dashboard</h1>
+      <p class="page-sub" id="welcome-msg">Welcome back</p>
+    </div>
+    <a href="/post-job.html" class="btn-primary">+ Post a job</a>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total jobs posted</div>
+      <div class="stat-value">0</div>
+      <div class="stat-sub neutral">Get started below</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Active jobs</div>
+      <div class="stat-value">0</div>
+      <div class="stat-sub neutral">None in progress</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Completed jobs</div>
+      <div class="stat-value">0</div>
+      <div class="stat-sub neutral">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total spent</div>
+      <div class="stat-value">£0</div>
+      <div class="stat-sub neutral">—</div>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <!-- LEFT COLUMN -->
+    <div>
+      <!-- ACTIVE JOBS -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title">Active jobs</span>
+          <span class="section-count">0</span>
+        </div>
+        <div class="empty-state">
+          <div class="empty-icon">◈</div>
+          <div class="empty-title">No active jobs yet</div>
+          <div class="empty-sub">Post your first job and start getting applications from editors within minutes.</div>
+        </div>
+      </div>
+
+      <!-- PENDING REVIEW -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title">Pending your review</span>
+          <span class="section-count">0</span>
+        </div>
+        <div class="empty-state">
+          <div class="empty-icon">◉</div>
+          <div class="empty-title">Nothing to review</div>
+          <div class="empty-sub">When an editor delivers work it will appear here for your approval.</div>
+        </div>
+      </div>
+
+      <!-- COMPLETED -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title">Completed jobs</span>
+          <span class="section-count">0</span>
+        </div>
+        <div class="empty-state">
+          <div class="empty-icon">✓</div>
+          <div class="empty-title">No completed jobs yet</div>
+          <div class="empty-sub">Your finished projects will show up here.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="right-sidebar">
+      <div class="quick-action">
+        <h3>Get started</h3>
+        <p>Post your first job and connect with a great editor today.</p>
+        <a href="/post-job.html" class="btn-primary" style="width:100%; justify-content:center;">+ Post a job</a>
+      </div>
+
+      <div class="quick-action">
+        <h3>Quick actions</h3>
+        <div class="action-list">
+          <a href="/browse-editors.html" class="action-item">◎ Browse editors</a>
+          <a href="/post-job.html" class="action-item">+ Post a new job</a>
+          <a href="#" class="action-item">◉ Messages</a>
+          <a href="#" class="action-item">⚙ Account settings</a>
+        </div>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-label">Pro tip</div>
+        <div class="tip-text">Add reference videos and examples when posting a job. Editors deliver better work when they understand your style.</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const SUPABASE_URL = 'YOUR_SUPABASE_URL'
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'
+  const { createClient } = supabase
+  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+  async function init() {
+    const { data: { session } } = await client.auth.getSession()
+
+    if (!session) {
+      window.location.href = '/login.html'
+      return
+    }
+
+    const { data: profile } = await client
+      .from('profiles')
+      .select('username, account_type')
+      .eq('id', session.user.id)
+      .single()
+
+    if (profile) {
+      if (profile.account_type === 'editor') {
+        window.location.href = '/dashboard-editor.html'
+        return
+      }
+
+      const username = profile.username || session.user.email.split('@')[0]
+      document.getElementById('user-name').textContent = username
+      document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase()
+
+      const hour = new Date().getHours()
+      const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+      document.getElementById('welcome-msg').textContent = greeting + ', ' + username
+    }
+  }
+
+  async function handleLogout() {
+    await client.auth.signOut()
+    window.location.href = '/index.html'
+  }
+
+  init()
+</script>
+
+</body>
+</html>
