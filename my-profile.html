@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Okify — Edit My Profile</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,50 50,95 5,50' fill='%238b5cf6'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e18; --bg-2: #0b0b14; --bg-3: #13131f; --bg-4: #1a1a2e;
+    --purple: #8b5cf6; --purple-dim: #7c3aed; --purple-bright: #a78bfa;
+    --text: #e8e6f0; --text-muted: #6b6980; --text-dim: #4a4860;
+    --border: rgba(255,255,255,0.07); --border-purple: rgba(139,92,246,0.2);
+    --sidebar-width: 240px; --radius: 10px; --radius-lg: 14px;
+  }
+
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; }
+
+  .sidebar { width: var(--sidebar-width); background: var(--bg-2); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; }
+  .sidebar-logo { padding: 1.5rem; border-bottom: 1px solid var(--border); }
+  .logo { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.03em; color: #fff; text-decoration: none; }
+  .logo span { color: var(--purple); }
+  .sidebar-nav { flex: 1; padding: 1rem 0.75rem; display: flex; flex-direction: column; gap: 0.2rem; }
+  .nav-section-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); padding: 0.5rem 0.75rem; margin-top: 0.5rem; }
+  .nav-item { display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0.75rem; border-radius: 8px; color: var(--text-muted); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: background 0.15s, color 0.15s; }
+  .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+  .nav-item.active { background: rgba(139,92,246,0.12); color: var(--purple-bright); }
+  .nav-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+  .sidebar-bottom { padding: 1rem 0.75rem; border-top: 1px solid var(--border); }
+  .user-info { display: flex; align-items: center; gap: 0.65rem; padding: 0.6rem 0.75rem; border-radius: 8px; cursor: pointer; }
+  .user-avatar { width: 32px; height: 32px; border-radius: 8px; background: var(--purple); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .user-name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+  .user-role { font-size: 0.68rem; color: var(--text-dim); }
+  .logout-btn { display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0.75rem; border-radius: 8px; color: var(--text-dim); font-size: 0.82rem; font-weight: 500; cursor: pointer; border: none; background: none; width: 100%; font-family: 'Plus Jakarta Sans', sans-serif; transition: color 0.15s, background 0.15s; margin-top: 0.25rem; }
+  .logout-btn:hover { color: #f09595; background: rgba(240,149,149,0.06); }
+
+  .main { margin-left: var(--sidebar-width); flex: 1; padding: 2rem; max-width: calc(100vw - var(--sidebar-width)); }
+
+  .page-header { margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; }
+  .page-title { font-size: 1.4rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; }
+  .page-sub { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+  .view-profile-link {
+    font-size: 0.82rem; color: var(--purple-bright); text-decoration: none; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 0.3rem;
+  }
+
+  .form-layout { display: grid; grid-template-columns: 1fr 280px; gap: 1.5rem; align-items: flex-start; }
+
+  .card { background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.75rem; margin-bottom: 1.25rem; }
+
+  .card-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
+
+  .form-group { margin-bottom: 1.25rem; }
+  .form-group:last-child { margin-bottom: 0; }
+
+  label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.45rem; letter-spacing: 0.02em; }
+  .label-hint { font-size: 0.68rem; color: var(--text-dim); font-weight: 400; margin-left: 0.3rem; }
+
+  input[type="text"], input[type="number"], input[type="url"], textarea, select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 0.78rem 1rem; border-radius: var(--radius);
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.9rem; outline: none; transition: border-color 0.2s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: rgba(139,92,246,0.5); }
+  input::placeholder, textarea::placeholder { color: var(--text-dim); }
+  textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+  select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b6980' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.85rem center; }
+  select option { background: #13131f; }
+
+  .input-hint { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.35rem; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+
+  /* SPECIALISMS */
+  .tags-input-wrap { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; transition: border-color 0.2s; cursor: text; }
+  .tags-input-wrap:focus-within { border-color: rgba(139,92,246,0.5); }
+  .tag-chip { background: rgba(139,92,246,0.15); color: var(--purple-bright); padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500; display: flex; align-items: center; gap: 0.3rem; }
+  .tag-remove { cursor: pointer; opacity: 0.7; font-size: 0.8rem; }
+  .tag-remove:hover { opacity: 1; }
+  .tag-input { background: none; border: none; color: var(--text); outline: none; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.85rem; min-width: 120px; flex: 1; padding: 0.3rem 0.4rem; }
+  .tag-input::placeholder { color: var(--text-dim); }
+
+  .btn-save { background: var(--purple); color: #fff; padding: 0.75rem 1.75rem; border-radius: var(--radius); font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.92rem; border: none; cursor: pointer; transition: background 0.2s; }
+  .btn-save:hover { background: var(--purple-dim); }
+  .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .success-msg { background: rgba(110,231,183,0.1); border: 1px solid rgba(110,231,183,0.3); color: #6ee7b7; padding: 0.75rem 1rem; border-radius: var(--radius); font-size: 0.8rem; margin-bottom: 1rem; display: none; }
+  .error-msg { background: rgba(240,149,149,0.1); border: 1px solid rgba(240,149,149,0.3); color: #f09595; padding: 0.75rem 1rem; border-radius: var(--radius); font-size: 0.8rem; margin-bottom: 1rem; display: none; }
+
+  /* PREVIEW */
+  .preview-card { background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.35rem; position: sticky; top: 2rem; }
+  .preview-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 1rem; }
+
+  .mini-profile { text-align: center; padding-bottom: 1rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
+  .mini-avatar { width: 56px; height: 56px; border-radius: 12px; background: var(--purple); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 800; color: #fff; margin: 0 auto 0.65rem; }
+  .mini-name { font-size: 0.92rem; font-weight: 700; color: #fff; margin-bottom: 0.2rem; }
+  .mini-tagline { font-size: 0.75rem; color: var(--text-muted); }
+  .mini-rate { font-size: 1.1rem; font-weight: 800; color: var(--purple); margin-top: 0.5rem; }
+
+  .mini-specialisms { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.75rem; justify-content: center; }
+  .mini-spec { background: rgba(139,92,246,0.1); color: var(--purple-bright); padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.68rem; font-weight: 500; }
+
+  .completeness-bar { margin-top: 1rem; }
+  .completeness-label { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.4rem; }
+  .completeness-track { height: 4px; background: var(--bg-4); border-radius: 2px; overflow: hidden; }
+  .completeness-fill { height: 100%; background: var(--purple); border-radius: 2px; transition: width 0.3s; }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo"><a href="/index.html" class="logo">okify<span>.</span></a></div>
+  <nav class="sidebar-nav">
+    <span class="nav-section-label">Main</span>
+    <a class="nav-item" href="/dashboard-editor.html"><span class="nav-icon">⊞</span> Dashboard</a>
+    <a class="nav-item" href="/browse-jobs.html"><span class="nav-icon">◎</span> Browse jobs</a>
+    <a class="nav-item active" href="/my-profile.html"><span class="nav-icon">◉</span> My profile</a>
+    <span class="nav-section-label">My work</span>
+    <a class="nav-item" href="#"><span class="nav-icon">◈</span> Active jobs</a>
+    <a class="nav-item" href="#"><span class="nav-icon">⟳</span> Applications</a>
+    <a class="nav-item" href="#"><span class="nav-icon">✓</span> Completed</a>
+    <span class="nav-section-label">Account</span>
+    <a class="nav-item" href="#"><span class="nav-icon">◉</span> Messages</a>
+    <a class="nav-item" href="#"><span class="nav-icon">★</span> Upgrade plan</a>
+    <a class="nav-item" href="#"><span class="nav-icon">⚙</span> Settings</a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="user-info">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <div>
+        <div class="user-name" id="user-name">Loading...</div>
+        <div class="user-role">Editor</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="handleLogout()"><span>↪</span> Log out</button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Edit my profile</h1>
+      <p class="page-sub">This is what clients see when they view your profile.</p>
+    </div>
+    <a href="#" class="view-profile-link" id="view-public-profile">View public profile →</a>
+  </div>
+
+  <div class="success-msg" id="success-msg"></div>
+  <div class="error-msg" id="error-msg"></div>
+
+  <div class="form-layout">
+    <div>
+      <!-- BASIC INFO -->
+      <div class="card">
+        <div class="card-title">Basic information</div>
+
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" placeholder="yourname">
+          <p class="input-hint">This is your public display name.</p>
+        </div>
+
+        <div class="form-group">
+          <label for="tagline">Tagline <span class="label-hint">(optional)</span></label>
+          <input type="text" id="tagline" placeholder="e.g. YouTube editor specialising in travel & lifestyle" oninput="updatePreview()">
+        </div>
+
+        <div class="form-group">
+          <label for="bio">About you</label>
+          <textarea id="bio" placeholder="Tell clients about your experience, style, and what makes your editing stand out..." oninput="updatePreview()"></textarea>
+        </div>
+
+        <div class="two-col">
+          <div class="form-group">
+            <label for="starting-rate">Starting rate (£)</label>
+            <input type="number" id="starting-rate" placeholder="e.g. 80" min="0" oninput="updatePreview()">
+            <p class="input-hint">Per video starting price.</p>
+          </div>
+          <div class="form-group">
+            <label for="response-time">Response time</label>
+            <select id="response-time">
+              <option value="">Select...</option>
+              <option value="Within 1 hour">Within 1 hour</option>
+              <option value="Within a few hours">Within a few hours</option>
+              <option value="Within 24 hours">Within 24 hours</option>
+              <option value="Within 2 days">Within 2 days</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPECIALISMS -->
+      <div class="card">
+        <div class="card-title">Specialisms</div>
+        <div class="form-group">
+          <label>What do you specialise in? <span class="label-hint">(press Enter to add)</span></label>
+          <div class="tags-input-wrap" onclick="document.getElementById('spec-input').focus()">
+            <div id="specs-container"></div>
+            <input type="text" class="tag-input" id="spec-input" placeholder="e.g. YouTube, colour grading, motion graphics..." onkeydown="handleSpecInput(event)">
+          </div>
+          <p class="input-hint">Add up to 8 specialisms. These help clients find you.</p>
+        </div>
+      </div>
+
+      <!-- PORTFOLIO -->
+      <div class="card">
+        <div class="card-title">Portfolio</div>
+        <div class="form-group">
+          <label for="portfolio-url-1">Portfolio link 1 <span class="label-hint">(YouTube, Vimeo, etc)</span></label>
+          <input type="url" id="portfolio-url-1" placeholder="https://youtube.com/watch?v=...">
+        </div>
+        <div class="form-group">
+          <label for="portfolio-url-2">Portfolio link 2 <span class="label-hint">(optional)</span></label>
+          <input type="url" id="portfolio-url-2" placeholder="https://...">
+        </div>
+        <div class="form-group">
+          <label for="portfolio-url-3">Portfolio link 3 <span class="label-hint">(optional)</span></label>
+          <input type="url" id="portfolio-url-3" placeholder="https://...">
+        </div>
+        <p class="input-hint">Add links to your best work. Clients will see these on your profile.</p>
+      </div>
+
+      <!-- SOCIAL -->
+      <div class="card">
+        <div class="card-title">Social links <span class="label-hint" style="text-transform:none; letter-spacing:0;">(optional)</span></div>
+        <div class="two-col">
+          <div class="form-group">
+            <label for="social-instagram">Instagram</label>
+            <input type="text" id="social-instagram" placeholder="@yourhandle">
+          </div>
+          <div class="form-group">
+            <label for="social-tiktok">TikTok</label>
+            <input type="text" id="social-tiktok" placeholder="@yourhandle">
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="form-group">
+            <label for="social-youtube">YouTube</label>
+            <input type="url" id="social-youtube" placeholder="https://youtube.com/...">
+          </div>
+          <div class="form-group">
+            <label for="social-twitter">X / Twitter</label>
+            <input type="text" id="social-twitter" placeholder="@yourhandle">
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end;">
+        <button class="btn-save" id="save-btn" onclick="saveProfile()">Save profile</button>
+      </div>
+    </div>
+
+    <!-- PREVIEW -->
+    <div>
+      <div class="preview-card">
+        <div class="preview-label">Profile preview</div>
+        <div class="mini-profile">
+          <div class="mini-avatar" id="preview-avatar">?</div>
+          <div class="mini-name" id="preview-name">Your name</div>
+          <div class="mini-tagline" id="preview-tagline">Your tagline</div>
+          <div class="mini-rate" id="preview-rate">£—</div>
+          <div class="mini-specialisms" id="preview-specs"></div>
+        </div>
+
+        <div class="completeness-bar">
+          <div class="completeness-label">
+            <span>Profile completeness</span>
+            <span id="completeness-pct">0%</span>
+          </div>
+          <div class="completeness-track">
+            <div class="completeness-fill" id="completeness-fill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div style="margin-top:1rem; font-size:0.72rem; color:var(--text-dim); line-height:1.7;" id="completeness-tips">
+          Complete your profile to attract more clients.
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const SUPABASE_URL = 'YOUR_SUPABASE_URL'
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'
+  const { createClient } = supabase
+  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+  let specialisms = []
+  let userId = null
+
+  function handleSpecInput(e) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      const val = e.target.value.trim().replace(',', '')
+      if (val && specialisms.length < 8 && !specialisms.includes(val)) {
+        specialisms.push(val)
+        renderSpecs()
+        e.target.value = ''
+        updatePreview()
+      }
+    }
+    if (e.key === 'Backspace' && !e.target.value && specialisms.length > 0) {
+      specialisms.pop()
+      renderSpecs()
+      updatePreview()
+    }
+  }
+
+  function removeSpec(idx) {
+    specialisms.splice(idx, 1)
+    renderSpecs()
+    updatePreview()
+  }
+
+  function renderSpecs() {
+    document.getElementById('specs-container').innerHTML = specialisms
+      .map((s, i) => `<span class="tag-chip">${s} <span class="tag-remove" onclick="removeSpec(${i})">×</span></span>`)
+      .join('')
+  }
+
+  function updatePreview() {
+    const username = document.getElementById('username').value || 'Your name'
+    const tagline = document.getElementById('tagline').value || 'Your tagline'
+    const rate = document.getElementById('starting-rate').value
+
+    const initial = username.charAt(0).toUpperCase()
+    document.getElementById('preview-avatar').textContent = initial
+    document.getElementById('preview-name').textContent = username
+    document.getElementById('preview-tagline').textContent = tagline
+    document.getElementById('preview-rate').textContent = rate ? '£' + rate : '£—'
+
+    document.getElementById('preview-specs').innerHTML = specialisms
+      .slice(0, 4).map(s => `<span class="mini-spec">${s}</span>`).join('')
+
+    updateCompleteness()
+  }
+
+  function updateCompleteness() {
+    const fields = [
+      document.getElementById('username').value,
+      document.getElementById('tagline').value,
+      document.getElementById('bio').value,
+      document.getElementById('starting-rate').value,
+      specialisms.length > 0 ? 'yes' : '',
+      document.getElementById('portfolio-url-1').value,
+      document.getElementById('response-time').value,
+    ]
+    const filled = fields.filter(f => f && f.trim()).length
+    const pct = Math.round((filled / fields.length) * 100)
+
+    document.getElementById('completeness-pct').textContent = pct + '%'
+    document.getElementById('completeness-fill').style.width = pct + '%'
+
+    const missing = []
+    if (!document.getElementById('tagline').value) missing.push('Add a tagline')
+    if (!document.getElementById('bio').value) missing.push('Write a bio')
+    if (!document.getElementById('starting-rate').value) missing.push('Set your starting rate')
+    if (specialisms.length === 0) missing.push('Add specialisms')
+    if (!document.getElementById('portfolio-url-1').value) missing.push('Add a portfolio link')
+
+    document.getElementById('completeness-tips').innerHTML = missing.length > 0
+      ? missing.map(m => `<div>• ${m}</div>`).join('')
+      : '<div style="color:#6ee7b7;">Profile looking great!</div>'
+  }
+
+  async function saveProfile() {
+    const btn = document.getElementById('save-btn')
+    btn.disabled = true
+    btn.textContent = 'Saving...'
+
+    const updates = {
+      username: document.getElementById('username').value.trim(),
+      tagline: document.getElementById('tagline').value.trim(),
+      bio: document.getElementById('bio').value.trim(),
+      starting_rate: parseFloat(document.getElementById('starting-rate').value) || null,
+      response_time: document.getElementById('response-time').value,
+      specialisms,
+      portfolio_urls: [
+        document.getElementById('portfolio-url-1').value.trim(),
+        document.getElementById('portfolio-url-2').value.trim(),
+        document.getElementById('portfolio-url-3').value.trim(),
+      ].filter(Boolean),
+      social_instagram: document.getElementById('social-instagram').value.trim(),
+      social_tiktok: document.getElementById('social-tiktok').value.trim(),
+      social_youtube: document.getElementById('social-youtube').value.trim(),
+      social_twitter: document.getElementById('social-twitter').value.trim(),
+    }
+
+    const { error } = await client.from('profiles').update(updates).eq('id', userId)
+
+    if (error) {
+      const el = document.getElementById('error-msg')
+      el.textContent = 'Something went wrong. Please try again.'
+      el.style.display = 'block'
+    } else {
+      const el = document.getElementById('success-msg')
+      el.textContent = 'Profile saved successfully!'
+      el.style.display = 'block'
+      setTimeout(() => { el.style.display = 'none' }, 3000)
+    }
+
+    btn.disabled = false
+    btn.textContent = 'Save profile'
+    window.scrollTo(0, 0)
+  }
+
+  async function init() {
+    const { data: { session } } = await client.auth.getSession()
+    if (!session) { window.location.href = '/login.html'; return }
+
+    userId = session.user.id
+
+    const { data: profile } = await client.from('profiles').select('*').eq('id', userId).single()
+
+    if (profile) {
+      if (profile.account_type !== 'editor') { window.location.href = '/dashboard-client.html'; return }
+
+      const username = profile.username || ''
+      document.getElementById('user-name').textContent = username || session.user.email.split('@')[0]
+      document.getElementById('user-avatar').textContent = (username || '?').charAt(0).toUpperCase()
+      document.getElementById('view-public-profile').href = '/editor-profile.html?id=' + userId
+
+      document.getElementById('username').value = username
+      document.getElementById('tagline').value = profile.tagline || ''
+      document.getElementById('bio').value = profile.bio || ''
+      document.getElementById('starting-rate').value = profile.starting_rate || ''
+      document.getElementById('response-time').value = profile.response_time || ''
+      document.getElementById('social-instagram').value = profile.social_instagram || ''
+      document.getElementById('social-tiktok').value = profile.social_tiktok || ''
+      document.getElementById('social-youtube').value = profile.social_youtube || ''
+      document.getElementById('social-twitter').value = profile.social_twitter || ''
+
+      if (profile.specialisms) {
+        specialisms = profile.specialisms
+        renderSpecs()
+      }
+
+      if (profile.portfolio_urls) {
+        const urls = profile.portfolio_urls
+        if (urls[0]) document.getElementById('portfolio-url-1').value = urls[0]
+        if (urls[1]) document.getElementById('portfolio-url-2').value = urls[1]
+        if (urls[2]) document.getElementById('portfolio-url-3').value = urls[2]
+      }
+
+      updatePreview()
+    }
+  }
+
+  async function handleLogout() {
+    await client.auth.signOut()
+    window.location.href = '/index.html'
+  }
+
+  document.querySelectorAll('input, textarea, select').forEach(el => {
+    el.addEventListener('input', updatePreview)
+    el.addEventListener('change', updatePreview)
+  })
+
+  init()
+</script>
+
+</body>
+</html>
