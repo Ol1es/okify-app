@@ -342,7 +342,25 @@
       if (myProfileLink) myProfileLink.href = profileUrl
       if (postJobBtn && profile.account_type === 'client') postJobBtn.style.display = 'flex'
     }
+}
 
+    if (profile.account_type === 'editor') {
+      document.querySelector('.sidebar-nav').innerHTML =
+        '<span class="nav-section-label">Main</span>' +
+        '<a class="nav-item" href="/dashboard-editor.html"><span class="nav-icon">&#9632;</span> Dashboard</a>' +
+        '<a class="nav-item active" href="/browse-jobs.html"><span class="nav-icon">&#9670;</span> Browse jobs</a>' +
+        '<a class="nav-item" href="/editor-profile.html?id=' + session.user.id + '"><span class="nav-icon">&#9673;</span> My profile</a>' +
+        '<span class="nav-section-label">My work</span>' +
+        '<a class="nav-item" href="/dashboard-editor.html"><span class="nav-icon">&#9671;</span> Active jobs</a>' +
+        '<a class="nav-item" href="/dashboard-editor.html"><span class="nav-icon">&#8635;</span> Applications</a>' +
+        '<a class="nav-item" href="/dashboard-editor.html"><span class="nav-icon">&#10003;</span> Completed</a>' +
+        '<span class="nav-section-label">Account</span>' +
+        '<a class="nav-item" href="/messages.html"><span class="nav-icon">&#9993;</span> Messages</a>' +
+        '<a class="nav-item" href="/upgrade.html"><span class="nav-icon">&#9733;</span> Upgrade plan</a>' +
+        '<a class="nav-item" href="/settings.html"><span class="nav-icon">&#9881;</span> Settings</a>'
+    }
+
+    var jobsData = await supabaseClient
     var jobsData = await supabaseClient
       .from('jobs')
       .select('*')
