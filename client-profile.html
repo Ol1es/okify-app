@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Okify — Client Profile</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,50 50,95 5,50' fill='%238b5cf6'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#0e0e18;--bg-2:#0b0b14;--bg-3:#13131f;--bg-4:#1a1a2e;
+    --purple:#8b5cf6;--purple-dim:#7c3aed;--purple-bright:#a78bfa;
+    --text:#e8e6f0;--text-muted:#6b6980;--text-dim:#4a4860;
+    --border:rgba(255,255,255,0.07);--border-purple:rgba(139,92,246,0.2);
+    --sidebar-width:240px;--radius:10px;--radius-lg:14px;
+  }
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;}
+  .sidebar{width:var(--sidebar-width);background:var(--bg-2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;}
+  .sidebar-logo{padding:1.5rem;border-bottom:1px solid var(--border);}
+  .logo{font-size:1.25rem;font-weight:800;letter-spacing:-0.03em;color:#fff;text-decoration:none;}
+  .logo span{color:var(--purple);}
+  .sidebar-nav{flex:1;padding:1rem 0.75rem;display:flex;flex-direction:column;gap:0.2rem;overflow-y:auto;}
+  .nav-section-label{font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);padding:0.5rem 0.75rem;margin-top:0.5rem;}
+  .nav-item{display:flex;align-items:center;gap:0.7rem;padding:0.6rem 0.75rem;border-radius:8px;color:var(--text-muted);text-decoration:none;font-size:0.85rem;font-weight:500;transition:background 0.15s,color 0.15s;}
+  .nav-item:hover{background:rgba(255,255,255,0.04);color:var(--text);}
+  .nav-item.active{background:rgba(139,92,246,0.12);color:var(--purple-bright);}
+  .nav-icon{font-size:0.9rem;width:18px;text-align:center;flex-shrink:0;}
+  .sidebar-bottom{padding:1rem 0.75rem;border-top:1px solid var(--border);}
+  .user-info{display:flex;align-items:center;gap:0.65rem;padding:0.6rem 0.75rem;border-radius:8px;cursor:pointer;transition:background 0.15s;text-decoration:none;}
+  .user-info:hover{background:rgba(255,255,255,0.04);}
+  .user-avatar{width:32px;height:32px;border-radius:8px;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:#fff;flex-shrink:0;}
+  .user-name{font-size:0.82rem;font-weight:600;color:var(--text);}
+  .user-role{font-size:0.68rem;color:var(--text-dim);}
+  .logout-btn{display:flex;align-items:center;gap:0.7rem;padding:0.6rem 0.75rem;border-radius:8px;color:var(--text-dim);font-size:0.82rem;font-weight:500;cursor:pointer;border:none;background:none;width:100%;font-family:'Plus Jakarta Sans',sans-serif;transition:color 0.15s,background 0.15s;margin-top:0.25rem;}
+  .logout-btn:hover{color:#f09595;background:rgba(240,149,149,0.06);}
+  .main{margin-left:var(--sidebar-width);flex:1;padding:2rem;max-width:calc(100vw - var(--sidebar-width));}
+  .back-btn{display:inline-flex;align-items:center;gap:0.4rem;color:var(--text-muted);font-size:0.82rem;font-weight:500;text-decoration:none;margin-bottom:1.5rem;transition:color 0.2s;}
+  .back-btn:hover{color:var(--text);}
+  .profile-layout{display:grid;grid-template-columns:1fr 280px;gap:1.5rem;align-items:flex-start;}
+  .card{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.75rem;margin-bottom:1.25rem;}
+  .section-label{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:1rem;padding-bottom:0.65rem;border-bottom:1px solid var(--border);}
+  .profile-header{display:flex;align-items:flex-start;gap:1.5rem;margin-bottom:1.5rem;}
+  .profile-avatar-lg{width:72px;height:72px;border-radius:16px;background:var(--bg-4);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.75rem;font-weight:800;color:var(--text-muted);flex-shrink:0;}
+  .profile-name{font-size:1.4rem;font-weight:800;color:#fff;letter-spacing:-0.02em;margin-bottom:0.3rem;}
+  .profile-type{display:inline-flex;background:rgba(139,92,246,0.1);color:var(--purple-bright);font-size:0.68rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:4px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.6rem;}
+  .profile-joined{font-size:0.78rem;color:var(--text-muted);}
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;margin-bottom:1.5rem;}
+  .stat-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center;}
+  .stat-box-num{font-size:1.4rem;font-weight:800;color:#fff;letter-spacing:-0.02em;}
+  .stat-box-label{font-size:0.65rem;color:var(--text-dim);margin-top:0.2rem;text-transform:uppercase;letter-spacing:0.05em;}
+  .rep-row{display:flex;gap:0.75rem;flex-wrap:wrap;}
+  .rep-badge{display:flex;align-items:center;gap:0.4rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:0.65rem 0.85rem;font-size:0.78rem;color:var(--text-muted);}
+  .job-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:0.65rem;transition:border-color 0.2s;cursor:pointer;}
+  .job-card:hover{border-color:var(--border-purple);}
+  .job-top{display:flex;justify-content:space-between;margin-bottom:0.3rem;}
+  .job-name{font-size:0.85rem;font-weight:600;color:#fff;}
+  .job-price{font-size:0.85rem;font-weight:700;color:var(--purple);}
+  .job-meta{font-size:0.72rem;color:var(--text-dim);}
+  .job-status{display:inline-flex;font-size:0.65rem;font-weight:700;padding:0.18rem 0.55rem;border-radius:4px;text-transform:uppercase;letter-spacing:0.04em;margin-top:0.4rem;}
+  .status-completed{background:rgba(110,231,183,0.1);color:#6ee7b7;}
+  .status-open{background:rgba(100,180,255,0.1);color:#64b4ff;}
+  .empty-state{text-align:center;padding:2rem;color:var(--text-dim);font-size:0.82rem;}
+  .right-sidebar{display:flex;flex-direction:column;gap:1.25rem;}
+  .info-card{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.35rem;position:sticky;top:2rem;}
+  .client-avatar-lg{width:64px;height:64px;border-radius:14px;background:var(--bg-4);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;color:var(--text-muted);margin:0 auto 0.75rem;}
+  .client-name-center{text-align:center;font-size:1rem;font-weight:700;color:#fff;margin-bottom:0.2rem;}
+  .client-since{text-align:center;font-size:0.72rem;color:var(--text-dim);margin-bottom:1rem;}
+  .trust-score{background:rgba(110,231,183,0.06);border:1px solid rgba(110,231,183,0.15);border-radius:var(--radius);padding:0.85rem;text-align:center;margin-bottom:1rem;}
+  .trust-num{font-size:1.5rem;font-weight:800;color:#6ee7b7;}
+  .trust-label{font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-top:0.2rem;}
+  .btn-message{width:100%;padding:0.78rem;border-radius:var(--radius);background:var(--purple);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:0.88rem;border:none;cursor:pointer;transition:background 0.2s;}
+  .btn-message:hover{background:var(--purple-dim);}
+  .details-list{display:flex;flex-direction:column;gap:0.6rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);}
+  .detail-row{display:flex;justify-content:space-between;font-size:0.78rem;}
+  .detail-row span:first-child{color:var(--text-dim);}
+  .detail-row span:last-child{color:var(--text);font-weight:500;}
+  .own-notice{background:rgba(139,92,246,0.06);border:1px solid var(--border-purple);border-radius:var(--radius);padding:0.85rem 1rem;font-size:0.78rem;color:var(--purple-bright);margin-bottom:1rem;text-align:center;line-height:1.5;}
+  .loading-state{text-align:center;padding:4rem;color:var(--text-muted);font-size:0.88rem;}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo"><a href="/index.html" class="logo">okify<span>.</span></a></div>
+  <nav class="sidebar-nav" id="sidebar-nav">
+    <span class="nav-section-label">Main</span>
+    <a class="nav-item" href="/dashboard-client.html"><span class="nav-icon">&#9632;</span> Dashboard</a>
+    <a class="nav-item" href="/post-job.html"><span class="nav-icon">+</span> Post a job</a>
+    <a class="nav-item" href="/browse-jobs.html"><span class="nav-icon">&#9670;</span> Marketplace</a>
+    <a class="nav-item" href="/browse-editors.html"><span class="nav-icon">&#9675;</span> Browse editors</a>
+    <span class="nav-section-label">My jobs</span>
+    <a class="nav-item" href="/dashboard-client.html#active-jobs"><span class="nav-icon">&#9671;</span> Active jobs</a>
+    <a class="nav-item" href="/dashboard-client.html#completed-jobs"><span class="nav-icon">&#10003;</span> Completed</a>
+    <span class="nav-section-label">Account</span>
+    <a class="nav-item active" href="#"><span class="nav-icon">&#9673;</span> My profile</a>
+    <a class="nav-item" href="/messages.html"><span class="nav-icon">&#9993;</span> Messages</a>
+    <a class="nav-item" href="/settings.html"><span class="nav-icon">&#9881;</span> Settings</a>
+  </nav>
+  <div class="sidebar-bottom">
+    <a class="user-info" href="#" id="profile-link">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <div>
+        <div class="user-name" id="user-name">Loading...</div>
+        <div class="user-role" id="user-role">Client</div>
+      </div>
+    </a>
+    <button class="logout-btn" onclick="handleLogout()">&#8618; Log out</button>
+  </div>
+</aside>
+
+<main class="main">
+  <a href="javascript:history.back()" class="back-btn">&#8592; Back</a>
+  <div id="loading" class="loading-state">Loading profile...</div>
+  <div id="profile-content" style="display:none;">
+    <div class="profile-layout">
+      <div>
+        <div class="card">
+          <div class="profile-header">
+            <div class="profile-avatar-lg" id="profile-avatar">?</div>
+            <div>
+              <div class="profile-name" id="profile-name">—</div>
+              <div class="profile-type">Client</div>
+              <div class="profile-joined" id="profile-joined">—</div>
+            </div>
+          </div>
+          <div class="stats-row">
+            <div class="stat-box"><div class="stat-box-num" id="stat-posted">0</div><div class="stat-box-label">Jobs posted</div></div>
+            <div class="stat-box"><div class="stat-box-num" id="stat-completed">0</div><div class="stat-box-label">Completed</div></div>
+            <div class="stat-box"><div class="stat-box-num" id="stat-spent">£0</div><div class="stat-box-label">Total spent</div></div>
+            <div class="stat-box"><div class="stat-box-num" id="stat-completion">—</div><div class="stat-box-label">Completion rate</div></div>
+          </div>
+          <div class="rep-row">
+            <div class="rep-badge">&#10003; Payment verified</div>
+            <div class="rep-badge">&#9733; Reviews left: <strong id="reviews-left" style="color:#fff;margin-left:4px;">0</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-label">Recent jobs posted</div>
+          <div id="jobs-content"><div class="empty-state">No jobs posted yet.</div></div>
+        </div>
+        <div class="card">
+          <div class="section-label">Reviews from editors</div>
+          <div id="reviews-content"><div class="empty-state">No reviews yet.</div></div>
+        </div>
+      </div>
+      <div class="right-sidebar">
+        <div class="info-card">
+          <div id="own-notice" class="own-notice" style="display:none;">This is your public client profile.</div>
+          <div class="client-avatar-lg" id="sidebar-avatar">?</div>
+          <div class="client-name-center" id="sidebar-name">—</div>
+          <div class="client-since" id="sidebar-since">—</div>
+          <div class="trust-score">
+            <div class="trust-num" id="trust-score">—</div>
+            <div class="trust-label">Trust score</div>
+          </div>
+          <button class="btn-message" id="message-btn" onclick="messageClient()">Send a message</button>
+          <div class="details-list">
+            <div class="detail-row"><span>Account type</span><span>Client</span></div>
+            <div class="detail-row"><span>Member since</span><span id="member-since">—</span></div>
+            <div class="detail-row"><span>Jobs posted</span><span id="sidebar-jobs">0</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  var SUPABASE_URL = 'YOUR_SUPABASE_URL'
+  var SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'
+  var supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  var profileUserId = null
+
+  function getIdFromUrl() {
+    return new URLSearchParams(window.location.search).get('id')
+  }
+
+  function formatDate(d) {
+    return new Date(d).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
+  }
+
+  function timeAgo(d) {
+    var diff = Math.floor((new Date() - new Date(d)) / 1000)
+    if (diff < 86400) return 'Today'
+    if (diff < 604800) return Math.floor(diff/86400) + 'd ago'
+    return Math.floor(diff/604800) + 'w ago'
+  }
+
+  function updateSidebarForAccountType(accountType, userId, username) {
+    var initial = (username || '?').charAt(0).toUpperCase()
+    document.getElementById('user-avatar').textContent = initial
+    document.getElementById('user-name').textContent = username || 'User'
+    document.getElementById('user-role').textContent = accountType === 'editor' ? 'Editor' : 'Client'
+    document.getElementById('profile-link').href = accountType === 'editor'
+      ? '/editor-profile.html?id=' + userId
+      : '/client-profile.html?id=' + userId
+
+    if (accountType === 'editor') {
+      document.getElementById('sidebar-nav').innerHTML =
+        '<span class="nav-section-label">Main</span>' +
+        '<a class="nav-item" href="/dashboard-editor.html"><span class="nav-icon">&#9632;</span> Dashboard</a>' +
+        '<a class="nav-item" href="/browse-jobs.html"><span class="nav-icon">&#9670;</span> Browse jobs</a>' +
+        '<a class="nav-item" href="/editor-profile.html?id=' + userId + '"><span class="nav-icon">&#9673;</span> My profile</a>' +
+        '<span class="nav-section-label">My work</span>' +
+        '<a class="nav-item" href="/dashboard-editor.html"><span class="nav-icon">&#9671;</span> Active jobs</a>' +
+        '<a class="nav-item" href="/dashboard-editor.html"><span class="nav-icon">&#8635;</span> Applications</a>' +
+        '<a class="nav-item" href="/dashboard-editor.html"><span class="nav-icon">&#10003;</span> Completed</a>' +
+        '<span class="nav-section-label">Account</span>' +
+        '<a class="nav-item" href="/messages.html"><span class="nav-icon">&#9993;</span> Messages</a>' +
+        '<a class="nav-item" href="/upgrade.html"><span class="nav-icon">&#9733;</span> Upgrade plan</a>' +
+        '<a class="nav-item" href="/settings.html"><span class="nav-icon">&#9881;</span> Settings</a>'
+    }
+  }
+
+  function messageClient() {
+    window.location.href = '/messages.html?user=' + profileUserId
+  }
+
+  async function init() {
+    profileUserId = getIdFromUrl()
+
+    var sessionData = await supabaseClient.auth.getSession()
+    var session = sessionData.data.session
+    if (!session) { window.location.href = '/login.html'; return }
+
+    if (!profileUserId) profileUserId = session.user.id
+    var isOwn = profileUserId === session.user.id
+
+    var myProfileData = await supabaseClient.from('profiles').select('username, account_type').eq('id', session.user.id).single()
+    var myProfile = myProfileData.data
+
+    if (myProfile) {
+      var username = myProfile.username || session.user.email.split('@')[0]
+      updateSidebarForAccountType(myProfile.account_type, session.user.id, username)
+    }
+
+    var profileData = await supabaseClient.from('profiles').select('id, username, account_type, created_at').eq('id', profileUserId).single()
+    var profile = profileData.data
+    var profileError = profileData.error
+
+    if (profileError || !profile) {
+      document.getElementById('loading').textContent = 'Profile not found.'
+      return
+    }
+
+    if (profile.account_type === 'editor' && !isOwn) {
+      window.location.href = '/editor-profile.html?id=' + profileUserId
+      return
+    }
+
+    var jobsData = await supabaseClient.from('jobs').select('id, title, budget, content_type, status, created_at').eq('client_id', profileUserId).order('created_at', { ascending: false })
+    var jobs = jobsData.data || []
+
+    var profileUsername = profile.username || 'Unknown'
+    var initial = profileUsername.charAt(0).toUpperCase()
+    var joinDate = formatDate(profile.created_at)
+
+    document.getElementById('profile-avatar').textContent = initial
+    document.getElementById('profile-name').textContent = profileUsername
+    document.getElementById('profile-joined').textContent = 'Member since ' + joinDate
+    document.getElementById('sidebar-avatar').textContent = initial
+    document.getElementById('sidebar-name').textContent = profileUsername
+    document.getElementById('sidebar-since').textContent = 'Since ' + joinDate
+    document.getElementById('member-since').textContent = joinDate
+
+    var completedJobs = jobs.filter(function(j) { return j.status === 'completed' })
+    var totalSpent = completedJobs.reduce(function(s, j) { return s + (parseFloat(j.budget) || 0) }, 0)
+    var completionRate = jobs.length > 0 ? Math.round((completedJobs.length / jobs.length) * 100) : 0
+
+    document.getElementById('stat-posted').textContent = jobs.length
+    document.getElementById('stat-completed').textContent = completedJobs.length
+    document.getElementById('stat-spent').textContent = '£' + totalSpent
+    document.getElementById('stat-completion').textContent = completionRate + '%'
+    document.getElementById('sidebar-jobs').textContent = jobs.length
+
+    var trust = 50
+    if (jobs.length > 0) trust += 10
+    if (jobs.length > 5) trust += 10
+    if (completedJobs.length > 0) trust += 15
+    var months = (new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24 * 30)
+    if (months > 3) trust += 15
+    document.getElementById('trust-score').textContent = Math.min(trust, 100) + '/100'
+
+    if (jobs.length > 0) {
+      var jobsHTML = ''
+      var displayJobs = jobs.slice(0, 5)
+      for (var i = 0; i < displayJobs.length; i++) {
+        var job = displayJobs[i]
+        var statusClass = job.status === 'completed' ? 'status-completed' : 'status-open'
+        jobsHTML += '<div class="job-card" onclick="window.location.href=\'/job-detail.html?id=' + job.id + '\'">'
+        jobsHTML += '<div class="job-top"><span class="job-name">' + (job.title || 'Untitled') + '</span><span class="job-price">' + (job.budget ? '£' + job.budget : '—') + '</span></div>'
+        jobsHTML += '<div class="job-meta">' + (job.content_type || '—') + ' · ' + timeAgo(job.created_at) + '</div>'
+        jobsHTML += '<span class="job-status ' + statusClass + '">' + (job.status || 'open') + '</span>'
+        jobsHTML += '</div>'
+      }
+      document.getElementById('jobs-content').innerHTML = jobsHTML
+    }
+
+    if (isOwn) {
+      document.getElementById('own-notice').style.display = 'block'
+      document.getElementById('message-btn').style.display = 'none'
+    }
+
+    document.getElementById('loading').style.display = 'none'
+    document.getElementById('profile-content').style.display = 'block'
+  }
+
+  async function handleLogout() {
+    await supabaseClient.auth.signOut()
+    window.location.href = '/index.html'
+  }
+
+  init()
+</script>
+</body>
+</html>
