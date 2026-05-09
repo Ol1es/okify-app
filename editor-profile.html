@@ -296,31 +296,30 @@
 <body>
 
 <aside class="sidebar">
-  <div class="sidebar-logo">
-    <a href="/index.html" class="logo">okify<span>.</span></a>
-  </div>
+  <div class="sidebar-logo"><a href="/index.html" class="logo">okify<span>.</span></a></div>
   <nav class="sidebar-nav" id="sidebar-nav">
     <span class="nav-section-label">Main</span>
-    <a class="nav-item" href="/dashboard-editor.html"><span class="nav-icon">⊞</span> Dashboard</a>
-    <a class="nav-item" href="/browse-jobs.html"><span class="nav-icon">◎</span> Browse jobs</a>
-    <a class="nav-item active" href="#"><span class="nav-icon">◉</span> Editor profile</a>
+    <a class="nav-item " href="/dashboard-editor.html"><span class="nav-icon">&#9632;</span> Dashboard</a>
+    <a class="nav-item " href="/browse-jobs.html"><span class="nav-icon">&#9670;</span> Browse jobs</a>
+    <a class="nav-item active" href="#" id="my-profile-link"><span class="nav-icon">&#9673;</span> My profile</a>
     <span class="nav-section-label">My work</span>
-    <a class="nav-item" href="#"><span class="nav-icon">◈</span> Active jobs</a>
-    <a class="nav-item" href="#"><span class="nav-icon">⟳</span> Applications</a>
-    <a class="nav-item" href="#"><span class="nav-icon">✓</span> Completed</a>
+    <a class="nav-item" href="/dashboard-editor.html#active-jobs"><span class="nav-icon">&#9671;</span> Active jobs</a>
+    <a class="nav-item" href="/dashboard-editor.html#applications"><span class="nav-icon">&#8635;</span> Applications</a>
+    <a class="nav-item" href="/dashboard-editor.html#completed-jobs"><span class="nav-icon">&#10003;</span> Completed</a>
     <span class="nav-section-label">Account</span>
-    <a class="nav-item" href="#"><span class="nav-icon">◉</span> Messages</a>
-    <a class="nav-item" href="#"><span class="nav-icon">⚙</span> Settings</a>
+    <a class="nav-item " href="/messages.html"><span class="nav-icon">&#9993;</span> Messages</a>
+    <a class="nav-item" href="/upgrade.html"><span class="nav-icon">&#9733;</span> Upgrade plan</a>
+    <a class="nav-item" href="/settings.html"><span class="nav-icon">&#9881;</span> Settings</a>
   </nav>
   <div class="sidebar-bottom">
-    <div class="user-info">
+    <a class="user-info" href="#" id="profile-link">
       <div class="user-avatar" id="user-avatar">?</div>
       <div>
         <div class="user-name" id="user-name">Loading...</div>
-        <div class="user-role" id="user-role">Editor</div>
+        <div class="user-role">Editor</div>
       </div>
-    </div>
-    <button class="logout-btn" onclick="handleLogout()"><span>↪</span> Log out</button>
+    </a>
+    <button class="logout-btn" onclick="handleLogout()">&#8618; Log out</button>
   </div>
 </aside>
 
@@ -440,7 +439,7 @@
 
 <script>
   const SUPABASE_URL = 'https://lvhwrqvdmbhaxlbjdaod.supabase.co'
-  const SUPABASE_ANON_KEY = 'gyNDk3NTQsImV4cCI6MjA5MzgyNTc1NH0.EqXDoNWiZvPGswzsMwKUo4bXzsn8Kgsog-RPHZf-S1o'
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2aHdycXZkbWJoYXhsYmpkYW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNDk3NTQsImV4cCI6MjA5MzgyNTc1NH0.EqXDoNWiZvPGswzsMwKUo4bXzsn8Kgsog-RPHZf-S1o'
   const { createClient } = supabase
   const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
@@ -515,6 +514,17 @@
 
     if (myProfile) {
       const username = myProfile.username || session.user.email.split('@')[0]
+      const _profileUrl = myProfile.account_type === 'editor'
+        ? '/editor-profile.html?id=' + session.user.id
+        : '/client-profile.html?id=' + session.user.id
+      const _plEl = document.getElementById('my-profile-link')
+      const _uiEl = document.getElementById('profile-link')
+      if (_plEl) _plEl.href = _profileUrl
+      if (_uiEl) _uiEl.href = _profileUrl
+      const _nameEl = document.getElementById('user-name')
+      const _avatarEl = document.getElementById('user-avatar')
+      if (_nameEl) _nameEl.textContent = username
+      if (_avatarEl) _avatarEl.textContent = username.charAt(0).toUpperCase()
       document.getElementById('user-name').textContent = username
       document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase()
       document.getElementById('user-role').textContent = myProfile.account_type === 'editor' ? 'Editor' : 'Client'
