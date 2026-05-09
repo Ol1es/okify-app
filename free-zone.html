@@ -10,306 +10,96 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
-    --bg: #0e0e18;
-    --bg-2: #0b0b14;
-    --bg-3: #13131f;
-    --bg-4: #1a1a2e;
-    --purple: #8b5cf6;
-    --purple-dim: #7c3aed;
-    --purple-bright: #a78bfa;
-    --blue: #2563eb;
-    --blue-bright: #60a5fa;
-    --blue-dim: #1d4ed8;
-    --text: #e8e6f0;
-    --text-muted: #6b6980;
-    --text-dim: #4a4860;
-    --text-dimmer: #3a3a52;
-    --border: rgba(255,255,255,0.07);
-    --border-blue: rgba(37,99,235,0.25);
-    --sidebar-width: 240px;
-    --radius: 10px;
-    --radius-lg: 14px;
+    --bg:#0e0e18;--bg-2:#0b0b14;--bg-3:#13131f;--bg-4:#1a1a2e;
+    --purple:#8b5cf6;--purple-dim:#7c3aed;--purple-bright:#a78bfa;
+    --blue:#2563eb;--blue-bright:#60a5fa;--blue-dim:#1d4ed8;
+    --text:#e8e6f0;--text-muted:#6b6980;--text-dim:#4a4860;--text-dimmer:#3a3a52;
+    --border:rgba(255,255,255,0.07);--border-purple:rgba(139,92,246,0.2);
+    --border-blue:rgba(37,99,235,0.25);
+    --sidebar-width:240px;--radius:10px;--radius-lg:14px;
   }
-
-  html { scroll-behavior: smooth; }
-
-  body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    display: flex;
-  }
-
-  .sidebar {
-    width: var(--sidebar-width);
-    background: var(--bg-2);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    position: fixed;
-    top: 0; left: 0; bottom: 0;
-    z-index: 50;
-  }
-
-  .sidebar-logo { padding: 1.5rem; border-bottom: 1px solid var(--border); }
-
-  .logo {
-    font-size: 1.25rem; font-weight: 800; letter-spacing: -0.03em;
-    color: #fff; text-decoration: none;
-  }
-  .logo span { color: var(--purple); }
-
-  .sidebar-nav {
-    flex: 1; padding: 1rem 0.75rem;
-    display: flex; flex-direction: column; gap: 0.2rem;
-  }
-
-  .nav-section-label {
-    font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.1em; color: var(--text-dim);
-    padding: 0.5rem 0.75rem; margin-top: 0.5rem;
-  }
-
-  .nav-item {
-    display: flex; align-items: center; gap: 0.7rem;
-    padding: 0.6rem 0.75rem; border-radius: 8px;
-    color: var(--text-muted); text-decoration: none;
-    font-size: 0.85rem; font-weight: 500;
-    transition: background 0.15s, color 0.15s;
-  }
-  .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
-  .nav-item.active { background: rgba(37,99,235,0.12); color: var(--blue-bright); }
-  .nav-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
-
-  .sidebar-bottom { padding: 1rem 0.75rem; border-top: 1px solid var(--border); }
-
-  .user-info {
-    display: flex; align-items: center; gap: 0.65rem;
-    padding: 0.6rem 0.75rem; border-radius: 8px;
-    cursor: pointer; transition: background 0.15s;
-  }
-  .user-info:hover { background: rgba(255,255,255,0.04); }
-
-  .user-avatar {
-    width: 32px; height: 32px; border-radius: 8px;
-    background: var(--purple); display: flex; align-items: center;
-    justify-content: center; font-size: 0.75rem; font-weight: 700;
-    color: #fff; flex-shrink: 0;
-  }
-
-  .user-name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
-  .user-role { font-size: 0.68rem; color: var(--text-dim); }
-
-  .logout-btn {
-    display: flex; align-items: center; gap: 0.7rem;
-    padding: 0.6rem 0.75rem; border-radius: 8px;
-    color: var(--text-dim); font-size: 0.82rem; font-weight: 500;
-    cursor: pointer; transition: color 0.15s, background 0.15s;
-    margin-top: 0.25rem; border: none; background: none; width: 100%;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-  }
-  .logout-btn:hover { color: #f09595; background: rgba(240,149,149,0.06); }
-
-  .main {
-    margin-left: var(--sidebar-width);
-    flex: 1; display: flex; flex-direction: column;
-    max-width: calc(100vw - var(--sidebar-width));
-  }
-
-  .topbar {
-    padding: 1.25rem 2rem;
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 1rem;
-    background: var(--bg-2);
-    position: sticky; top: 0; z-index: 40;
-  }
-
-  .marketplace-tabs {
-    display: flex; gap: 0.4rem;
-    background: var(--bg); border-radius: 8px; padding: 0.3rem;
-  }
-
-  .market-tab {
-    font-size: 0.78rem; font-weight: 600; padding: 0.4rem 1rem;
-    border-radius: 6px; cursor: pointer; text-decoration: none;
-    transition: background 0.15s, color 0.15s;
-  }
-  .market-tab.standard { color: var(--text-dim); }
-  .market-tab.standard:hover { color: var(--text); background: rgba(255,255,255,0.04); }
-  .market-tab.standard.active { background: var(--purple); color: #fff; }
-  .market-tab.free.active { background: var(--blue); color: #fff; }
-  .market-tab.free { color: var(--text-dim); }
-  .market-tab.free:hover { color: var(--text); background: rgba(255,255,255,0.04); }
-
-  .search-bar {
-    flex: 1; display: flex; align-items: center; gap: 0.5rem;
-    background: var(--bg); border: 1px solid var(--border);
-    border-radius: 8px; padding: 0.5rem 0.85rem;
-    transition: border-color 0.2s;
-  }
-  .search-bar:focus-within { border-color: var(--border-blue); }
-  .search-icon { color: var(--text-dim); font-size: 0.85rem; flex-shrink: 0; }
-  .search-input {
-    flex: 1; background: none; border: none; color: var(--text);
-    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.85rem; outline: none;
-  }
-  .search-input::placeholder { color: var(--text-dim); }
-
-  .btn-primary {
-    background: var(--blue); color: #fff;
-    padding: 0.6rem 1.1rem; border-radius: 8px;
-    font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.82rem;
-    text-decoration: none; border: none; cursor: pointer;
-    transition: background 0.2s; white-space: nowrap;
-    display: inline-flex; align-items: center; gap: 0.4rem;
-  }
-  .btn-primary:hover { background: var(--blue-dim); }
-
-  .content-area { display: flex; flex: 1; }
-
-  .filter-sidebar {
-    width: 220px; flex-shrink: 0;
-    padding: 1.5rem 1.25rem;
-    border-right: 1px solid var(--border);
-    background: var(--bg-2);
-  }
-
-  .filter-title {
-    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 1.25rem;
-  }
-
-  .filter-group { margin-bottom: 1.5rem; }
-  .filter-group-title { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.65rem; }
-
-  .filter-option {
-    display: flex; align-items: center; gap: 0.55rem;
-    padding: 0.38rem 0; cursor: pointer;
-  }
-
-  .filter-checkbox {
-    width: 15px; height: 15px; border-radius: 4px;
-    border: 1.5px solid var(--border); background: var(--bg); flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    transition: border-color 0.15s, background 0.15s; cursor: pointer;
-  }
-  .filter-option.checked .filter-checkbox { background: var(--blue); border-color: var(--blue); }
-  .filter-option.checked .filter-checkbox::after { content: '✓'; font-size: 0.6rem; color: #fff; font-weight: 700; }
-  .filter-label { font-size: 0.8rem; color: var(--text-muted); }
-  .filter-option.checked .filter-label { color: var(--text); }
-
-  .budget-range { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-
-  .budget-input {
-    background: var(--bg); border: 1px solid var(--border);
-    color: var(--text); padding: 0.45rem 0.6rem;
-    border-radius: 6px; font-size: 0.78rem;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    outline: none; width: 100%;
-  }
-  .budget-input:focus { border-color: var(--border-blue); }
-
-  .filter-reset {
-    font-size: 0.75rem; color: var(--blue-bright); cursor: pointer;
-    background: none; border: none; font-family: 'Plus Jakarta Sans', sans-serif;
-    padding: 0; text-decoration: underline;
-  }
-
-  .jobs-area { flex: 1; padding: 1.5rem; overflow-y: auto; }
-
-  .jobs-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 1rem;
-  }
-
-  .jobs-count { font-size: 0.82rem; color: var(--text-muted); }
-  .jobs-count span { color: #fff; font-weight: 600; }
-
-  .sort-select {
-    background: var(--bg-3); border: 1px solid var(--border);
-    color: var(--text); padding: 0.4rem 0.75rem;
-    border-radius: 6px; font-size: 0.78rem;
-    font-family: 'Plus Jakarta Sans', sans-serif; outline: none; cursor: pointer;
-  }
-
-  .jobs-grid { display: flex; flex-direction: column; gap: 0.75rem; }
-
-  .job-card {
-    background: var(--bg-3); border: 1px solid var(--border);
-    border-radius: var(--radius-lg); padding: 1.25rem;
-    transition: border-color 0.2s, transform 0.15s; cursor: pointer;
-  }
-  .job-card:hover { border-color: var(--border-blue); transform: translateY(-1px); }
-
-  .job-card-top {
-    display: flex; align-items: flex-start; justify-content: space-between;
-    margin-bottom: 0.5rem; gap: 1rem;
-  }
-
-  .job-card-left { flex: 1; }
-  .job-card-title { font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem; }
-
-  .job-card-meta {
-    display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;
-    font-size: 0.72rem; color: var(--text-dim);
-  }
-
-  .meta-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--text-dimmer); flex-shrink: 0; }
-
-  .job-card-right { text-align: right; flex-shrink: 0; }
-  .job-price { font-size: 1.1rem; font-weight: 800; color: var(--blue-bright); letter-spacing: -0.02em; }
-  .job-price-label { font-size: 0.65rem; color: var(--text-dim); margin-top: 0.1rem; }
-
-  .job-card-desc {
-    font-size: 0.8rem; color: var(--text-muted); line-height: 1.65;
-    margin: 0.65rem 0; display: -webkit-box; -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical; overflow: hidden;
-  }
-
-  .job-card-footer {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-top: 0.85rem; padding-top: 0.85rem;
-    border-top: 1px solid var(--border);
-  }
-
-  .job-tags { display: flex; gap: 0.3rem; flex-wrap: wrap; }
-  .job-tag {
-    font-size: 0.62rem; font-weight: 500;
-    background: rgba(37,99,235,0.1); color: var(--blue-bright);
-    padding: 0.15rem 0.5rem; border-radius: 4px;
-  }
-
-  .free-badge {
-    font-size: 0.65rem; font-weight: 700; padding: 0.22rem 0.6rem;
-    border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em;
-    background: rgba(37,99,235,0.12); color: var(--blue-bright);
-  }
-
-  .apply-btn {
-    background: var(--blue); color: #fff;
-    padding: 0.45rem 1rem; border-radius: 6px;
-    font-size: 0.78rem; font-weight: 700; border: none; cursor: pointer;
-    font-family: 'Plus Jakarta Sans', sans-serif; transition: background 0.2s;
-  }
-  .apply-btn:hover { background: var(--blue-dim); }
-
-  .posted-time { font-size: 0.68rem; color: var(--text-dim); }
-
-  .empty-state { text-align: center; padding: 4rem 2rem; }
-  .empty-icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.3; }
-  .empty-title { font-size: 1rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.5rem; }
-  .empty-sub { font-size: 0.82rem; color: var(--text-dim); line-height: 1.7; max-width: 320px; margin: 0 auto; }
-
-  .free-zone-banner {
-    background: rgba(37,99,235,0.06); border: 1px solid var(--border-blue);
-    border-radius: var(--radius); padding: 0.75rem 1rem;
-    margin-bottom: 1rem; display: flex; align-items: center; gap: 0.6rem;
-  }
-  .free-zone-banner p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
-  .free-zone-banner strong { color: var(--blue-bright); }
+  html{scroll-behavior:smooth;}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;}
+  .sidebar{width:var(--sidebar-width);background:var(--bg-2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;}
+  .sidebar-logo{padding:1.5rem;border-bottom:1px solid var(--border);}
+  .logo{font-size:1.25rem;font-weight:800;letter-spacing:-0.03em;color:#fff;text-decoration:none;}
+  .logo span{color:var(--purple);}
+  .sidebar-nav{flex:1;padding:1rem 0.75rem;display:flex;flex-direction:column;gap:0.2rem;overflow-y:auto;}
+  .nav-section-label{font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);padding:0.5rem 0.75rem;margin-top:0.5rem;}
+  .nav-item{display:flex;align-items:center;gap:0.7rem;padding:0.6rem 0.75rem;border-radius:8px;color:var(--text-muted);text-decoration:none;font-size:0.85rem;font-weight:500;transition:background 0.15s,color 0.15s;}
+  .nav-item:hover{background:rgba(255,255,255,0.04);color:var(--text);}
+  .nav-item.active{background:rgba(139,92,246,0.12);color:var(--purple-bright);}
+  .nav-icon{font-size:0.9rem;width:18px;text-align:center;flex-shrink:0;}
+  .sidebar-bottom{padding:1rem 0.75rem;border-top:1px solid var(--border);}
+  .user-info{display:flex;align-items:center;gap:0.65rem;padding:0.6rem 0.75rem;border-radius:8px;cursor:pointer;transition:background 0.15s;text-decoration:none;}
+  .user-info:hover{background:rgba(255,255,255,0.04);}
+  .user-avatar{width:32px;height:32px;border-radius:8px;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:#fff;flex-shrink:0;}
+  .user-name{font-size:0.82rem;font-weight:600;color:var(--text);}
+  .user-role{font-size:0.68rem;color:var(--text-dim);}
+  .logout-btn{display:flex;align-items:center;gap:0.7rem;padding:0.6rem 0.75rem;border-radius:8px;color:var(--text-dim);font-size:0.82rem;font-weight:500;cursor:pointer;transition:color 0.15s,background 0.15s;margin-top:0.25rem;border:none;background:none;width:100%;font-family:'Plus Jakarta Sans',sans-serif;}
+  .logout-btn:hover{color:#f09595;background:rgba(240,149,149,0.06);}
+  .main{margin-left:var(--sidebar-width);flex:1;display:flex;flex-direction:column;max-width:calc(100vw - var(--sidebar-width));}
+  .topbar{padding:1.25rem 2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1rem;background:var(--bg-2);position:sticky;top:0;z-index:40;}
+  .marketplace-tabs{display:flex;gap:0.4rem;background:var(--bg);border-radius:8px;padding:0.3rem;}
+  .market-tab{font-size:0.78rem;font-weight:600;padding:0.4rem 1rem;border-radius:6px;cursor:pointer;text-decoration:none;transition:background 0.15s,color 0.15s;}
+  .market-tab.standard{color:var(--text-dim);}
+  .market-tab.standard:hover{color:var(--text);background:rgba(255,255,255,0.04);}
+  .market-tab.free-active{background:var(--blue);color:#fff;}
+  .market-tab.standard-inactive{color:var(--text-dim);}
+  .search-bar{flex:1;display:flex;align-items:center;gap:0.5rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.85rem;transition:border-color 0.2s;}
+  .search-bar:focus-within{border-color:var(--border-blue);}
+  .search-icon{color:var(--text-dim);font-size:0.85rem;flex-shrink:0;}
+  .search-input{flex:1;background:none;border:none;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:0.85rem;outline:none;}
+  .search-input::placeholder{color:var(--text-dim);}
+  .btn-primary-blue{background:var(--blue);color:#fff;padding:0.6rem 1.1rem;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:0.82rem;text-decoration:none;border:none;cursor:pointer;transition:background 0.2s;white-space:nowrap;display:inline-flex;align-items:center;gap:0.4rem;}
+  .btn-primary-blue:hover{background:var(--blue-dim);}
+  .content-area{display:flex;flex:1;}
+  .filter-sidebar{width:220px;flex-shrink:0;padding:1.5rem 1.25rem;border-right:1px solid var(--border);background:var(--bg-2);}
+  .filter-title{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:1.25rem;}
+  .filter-group{margin-bottom:1.5rem;}
+  .filter-group-title{font-size:0.78rem;font-weight:600;color:var(--text-muted);margin-bottom:0.65rem;}
+  .filter-option{display:flex;align-items:center;gap:0.55rem;padding:0.38rem 0;cursor:pointer;}
+  .filter-checkbox{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--border);background:var(--bg);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:border-color 0.15s,background 0.15s;}
+  .filter-option.checked .filter-checkbox{background:var(--blue);border-color:var(--blue);}
+  .filter-option.checked .filter-checkbox::after{content:'✓';font-size:0.6rem;color:#fff;font-weight:700;}
+  .filter-label{font-size:0.8rem;color:var(--text-muted);}
+  .filter-option.checked .filter-label{color:var(--text);}
+  .budget-range{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;}
+  .budget-input{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:0.45rem 0.6rem;border-radius:6px;font-size:0.78rem;font-family:'Plus Jakarta Sans',sans-serif;outline:none;width:100%;}
+  .budget-input:focus{border-color:var(--border-blue);}
+  .filter-reset{font-size:0.75rem;color:var(--blue-bright);cursor:pointer;background:none;border:none;font-family:'Plus Jakarta Sans',sans-serif;padding:0;text-decoration:underline;}
+  .jobs-area{flex:1;padding:1.5rem;overflow-y:auto;}
+  .jobs-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+  .jobs-count{font-size:0.82rem;color:var(--text-muted);}
+  .jobs-count span{color:#fff;font-weight:600;}
+  .sort-select{background:var(--bg-3);border:1px solid var(--border);color:var(--text);padding:0.4rem 0.75rem;border-radius:6px;font-size:0.78rem;font-family:'Plus Jakarta Sans',sans-serif;outline:none;cursor:pointer;}
+  .jobs-grid{display:flex;flex-direction:column;gap:0.75rem;}
+  .job-card{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;transition:border-color 0.2s,transform 0.15s;cursor:pointer;}
+  .job-card:hover{border-color:var(--border-blue);transform:translateY(-1px);}
+  .job-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.5rem;gap:1rem;}
+  .job-card-left{flex:1;}
+  .job-card-title{font-size:0.95rem;font-weight:700;color:#fff;margin-bottom:0.25rem;}
+  .job-card-meta{display:flex;align-items:center;gap:0.65rem;flex-wrap:wrap;font-size:0.72rem;color:var(--text-dim);}
+  .meta-dot{width:3px;height:3px;border-radius:50%;background:var(--text-dimmer);flex-shrink:0;}
+  .job-card-right{text-align:right;flex-shrink:0;}
+  .job-price{font-size:1.1rem;font-weight:800;color:var(--blue-bright);letter-spacing:-0.02em;}
+  .job-price-label{font-size:0.65rem;color:var(--text-dim);margin-top:0.1rem;}
+  .job-card-desc{font-size:0.8rem;color:var(--text-muted);line-height:1.65;margin:0.65rem 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .job-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:0.85rem;padding-top:0.85rem;border-top:1px solid var(--border);}
+  .job-tags{display:flex;gap:0.3rem;flex-wrap:wrap;}
+  .job-tag{font-size:0.62rem;font-weight:500;background:rgba(37,99,235,0.1);color:var(--blue-bright);padding:0.15rem 0.5rem;border-radius:4px;}
+  .free-badge{font-size:0.65rem;font-weight:700;padding:0.22rem 0.6rem;border-radius:4px;text-transform:uppercase;letter-spacing:0.04em;background:rgba(37,99,235,0.12);color:var(--blue-bright);}
+  .apply-btn{background:var(--blue);color:#fff;padding:0.45rem 1rem;border-radius:6px;font-size:0.78rem;font-weight:700;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:background 0.2s;}
+  .apply-btn:hover{background:var(--blue-dim);}
+  .posted-time{font-size:0.68rem;color:var(--text-dim);}
+  .empty-state{text-align:center;padding:4rem 2rem;}
+  .empty-icon{font-size:2.5rem;margin-bottom:1rem;opacity:0.3;}
+  .empty-title{font-size:1rem;font-weight:700;color:var(--text-muted);margin-bottom:0.5rem;}
+  .empty-sub{font-size:0.82rem;color:var(--text-dim);line-height:1.7;max-width:320px;margin:0 auto;}
+  .free-zone-banner{background:rgba(37,99,235,0.06);border:1px solid var(--border-blue);border-radius:var(--radius);padding:0.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.6rem;}
+  .free-zone-banner p{font-size:0.78rem;color:var(--text-muted);line-height:1.5;}
+  .free-zone-banner strong{color:var(--blue-bright);}
 </style>
 </head>
 <body>
@@ -318,16 +108,17 @@
   <div class="sidebar-logo"><a href="/index.html" class="logo">okify<span>.</span></a></div>
   <nav class="sidebar-nav" id="sidebar-nav">
     <span class="nav-section-label">Main</span>
-    <a class="nav-item " href="/dashboard-client.html"><span class="nav-icon">&#9632;</span> Dashboard</a>
-    <a class="nav-item " href="/post-job.html"><span class="nav-icon">+</span> Post a job</a>
-    <a class="nav-item active" href="/browse-jobs.html"><span class="nav-icon">&#9670;</span> Marketplace</a>
-    <a class="nav-item " href="/browse-editors.html"><span class="nav-icon">&#9675;</span> Browse editors</a>
+    <a class="nav-item" href="/dashboard-client.html"><span class="nav-icon">&#9632;</span> Dashboard</a>
+    <a class="nav-item" href="/post-job.html"><span class="nav-icon">+</span> Post a job</a>
+    <a class="nav-item" href="/browse-jobs.html"><span class="nav-icon">&#9670;</span> Marketplace</a>
+    <a class="nav-item active" href="/free-zone.html"><span class="nav-icon">&#9733;</span> Free zone</a>
+    <a class="nav-item" href="/browse-editors.html"><span class="nav-icon">&#9675;</span> Browse editors</a>
     <span class="nav-section-label">My jobs</span>
     <a class="nav-item" href="/dashboard-client.html#active-jobs"><span class="nav-icon">&#9671;</span> Active jobs</a>
     <a class="nav-item" href="/dashboard-client.html#completed-jobs"><span class="nav-icon">&#10003;</span> Completed</a>
     <span class="nav-section-label">Account</span>
-    <a class="nav-item " href="#" id="my-profile-link"><span class="nav-icon">&#9673;</span> My profile</a>
-    <a class="nav-item " href="/messages.html"><span class="nav-icon">&#9993;</span> Messages</a>
+    <a class="nav-item" href="#" id="my-profile-link"><span class="nav-icon">&#9673;</span> My profile</a>
+    <a class="nav-item" href="/messages.html"><span class="nav-icon">&#9993;</span> Messages</a>
     <a class="nav-item" href="/settings.html"><span class="nav-icon">&#9881;</span> Settings</a>
   </nav>
   <div class="sidebar-bottom">
@@ -335,7 +126,7 @@
       <div class="user-avatar" id="user-avatar">?</div>
       <div>
         <div class="user-name" id="user-name">Loading...</div>
-        <div class="user-role">Client</div>
+        <div class="user-role" id="user-role">—</div>
       </div>
     </a>
     <button class="logout-btn" onclick="handleLogout()">&#8618; Log out</button>
@@ -345,115 +136,81 @@
 <div class="main">
   <div class="topbar">
     <div class="marketplace-tabs">
-      <a href="/browse-jobs.html" class="market-tab standard">Standard</a>
-      <a href="/free-zone.html" class="market-tab free active">Free zone</a>
+      <a href="/browse-jobs.html" class="market-tab standard-inactive">Standard</a>
+      <a href="/free-zone.html" class="market-tab free-active">Free zone</a>
     </div>
     <div class="search-bar">
-      <span class="search-icon">⌕</span>
+      <span class="search-icon">&#9906;</span>
       <input type="text" class="search-input" placeholder="Search free zone..." id="search-input" oninput="filterJobs()">
     </div>
-    <a href="/post-job.html" class="btn-primary" id="post-job-btn" style="display:none;">+ Post a job</a>
+    <a href="/post-job.html" class="btn-primary-blue" id="post-job-btn" style="display:none;">+ Post a job</a>
   </div>
 
   <div class="content-area">
     <div class="filter-sidebar">
       <div class="filter-title">Filters <button class="filter-reset" onclick="resetFilters()">Reset</button></div>
-
       <div class="filter-group">
         <div class="filter-group-title">Content type</div>
-        <div class="filter-option" onclick="toggleFilter(this, 'type', 'YouTube')">
-          <div class="filter-checkbox"></div>
-          <span class="filter-label">YouTube</span>
-        </div>
-        <div class="filter-option" onclick="toggleFilter(this, 'type', 'TikTok')">
-          <div class="filter-checkbox"></div>
-          <span class="filter-label">TikTok / Reels</span>
-        </div>
-        <div class="filter-option" onclick="toggleFilter(this, 'type', 'Commercial')">
-          <div class="filter-checkbox"></div>
-          <span class="filter-label">Commercial</span>
-        </div>
-        <div class="filter-option" onclick="toggleFilter(this, 'type', 'Podcast')">
-          <div class="filter-checkbox"></div>
-          <span class="filter-label">Podcast</span>
-        </div>
-        <div class="filter-option" onclick="toggleFilter(this, 'type', 'Other')">
-          <div class="filter-checkbox"></div>
-          <span class="filter-label">Other</span>
-        </div>
+        <div class="filter-option" onclick="toggleFilter(this,'type','YouTube')"><div class="filter-checkbox"></div><span class="filter-label">YouTube</span></div>
+        <div class="filter-option" onclick="toggleFilter(this,'type','TikTok')"><div class="filter-checkbox"></div><span class="filter-label">TikTok / Reels</span></div>
+        <div class="filter-option" onclick="toggleFilter(this,'type','Commercial')"><div class="filter-checkbox"></div><span class="filter-label">Commercial</span></div>
+        <div class="filter-option" onclick="toggleFilter(this,'type','Podcast')"><div class="filter-checkbox"></div><span class="filter-label">Podcast</span></div>
+        <div class="filter-option" onclick="toggleFilter(this,'type','Other')"><div class="filter-checkbox"></div><span class="filter-label">Other</span></div>
       </div>
-
       <div class="filter-group">
         <div class="filter-group-title">Budget range</div>
         <div class="budget-range">
-          <input type="number" class="budget-input" placeholder="Min £" id="budget-min" oninput="filterJobs()">
-          <input type="number" class="budget-input" placeholder="Max £" id="budget-max" oninput="filterJobs()">
+          <input type="number" class="budget-input" placeholder="Min" id="budget-min" oninput="filterJobs()">
+          <input type="number" class="budget-input" placeholder="Max" id="budget-max" oninput="filterJobs()">
         </div>
       </div>
-
       <div class="filter-group">
         <div class="filter-group-title">Deadline</div>
-        <div class="filter-option" onclick="toggleFilter(this, 'deadline', '24h')">
-          <div class="filter-checkbox"></div>
-          <span class="filter-label">Within 24hrs</span>
-        </div>
-        <div class="filter-option" onclick="toggleFilter(this, 'deadline', '3d')">
-          <div class="filter-checkbox"></div>
-          <span class="filter-label">Within 3 days</span>
-        </div>
-        <div class="filter-option" onclick="toggleFilter(this, 'deadline', '1w')">
-          <div class="filter-checkbox"></div>
-          <span class="filter-label">Within a week</span>
-        </div>
-        <div class="filter-option" onclick="toggleFilter(this, 'deadline', 'flexible')">
-          <div class="filter-checkbox"></div>
-          <span class="filter-label">Flexible</span>
-        </div>
+        <div class="filter-option" onclick="toggleFilter(this,'deadline','24h')"><div class="filter-checkbox"></div><span class="filter-label">Within 24hrs</span></div>
+        <div class="filter-option" onclick="toggleFilter(this,'deadline','3d')"><div class="filter-checkbox"></div><span class="filter-label">Within 3 days</span></div>
+        <div class="filter-option" onclick="toggleFilter(this,'deadline','1w')"><div class="filter-checkbox"></div><span class="filter-label">Within a week</span></div>
+        <div class="filter-option" onclick="toggleFilter(this,'deadline','flexible')"><div class="filter-checkbox"></div><span class="filter-label">Flexible</span></div>
       </div>
     </div>
 
     <div class="jobs-area">
       <div class="free-zone-banner">
-        <span style="color:var(--blue-bright); font-size:1rem;">⚡</span>
+        <span style="color:var(--blue-bright);">&#9889;</span>
         <p>Free zone has <strong>no minimum pricing</strong>. Perfect for quick jobs, portfolio building, and budget-friendly projects.</p>
       </div>
-
       <div class="jobs-header">
         <div class="jobs-count"><span id="job-count">0</span> jobs available</div>
         <select class="sort-select" onchange="sortJobs(this.value)">
           <option value="newest">Newest first</option>
           <option value="price-high">Highest budget</option>
           <option value="price-low">Lowest budget</option>
-          <option value="deadline">Deadline soon</option>
         </select>
       </div>
-
       <div class="jobs-grid" id="jobs-grid"></div>
     </div>
   </div>
 </div>
 
 <script>
-  const SUPABASE_URL = 'https://lvhwrqvdmbhaxlbjdaod.supabase.co'
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2aHdycXZkbWJoYXhsYmpkYW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNDk3NTQsImV4cCI6MjA5MzgyNTc1NH0.EqXDoNWiZvPGswzsMwKUo4bXzsn8Kgsog-RPHZf-S1o'
-  const { createClient } = supabase
-  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  var SUPABASE_URL = 'https://lvhwrqvdmbhaxlbjdaod.supabase.co'
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2aHdycXZkbWJoYXhsYmpkYW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNDk3NTQsImV4cCI6MjA5MzgyNTc1NH0.EqXDoNWiZvPGswzsMwKUo4bXzsn8Kgsog-RPHZf-S1o'
+  var supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-  let allJobs = []
-  let activeFilters = { type: [], deadline: [] }
-  let userRole = 'editor'
+  var allJobs = []
+  var activeFilters = { type: [], deadline: [] }
+  var userRole = 'editor'
 
   function toggleFilter(el, category, value) {
     el.classList.toggle('checked')
-    const idx = activeFilters[category] ? activeFilters[category].indexOf(value) : -1
     if (!activeFilters[category]) activeFilters[category] = []
+    var idx = activeFilters[category].indexOf(value)
     if (idx === -1) activeFilters[category].push(value)
     else activeFilters[category].splice(idx, 1)
     filterJobs()
   }
 
   function resetFilters() {
-    document.querySelectorAll('.filter-option').forEach(el => el.classList.remove('checked'))
+    document.querySelectorAll('.filter-option').forEach(function(el) { el.classList.remove('checked') })
     activeFilters = { type: [], deadline: [] }
     document.getElementById('budget-min').value = ''
     document.getElementById('budget-max').value = ''
@@ -461,9 +218,7 @@
   }
 
   function timeAgo(dateStr) {
-    const now = new Date()
-    const date = new Date(dateStr)
-    const diff = Math.floor((now - date) / 1000)
+    var diff = Math.floor((new Date() - new Date(dateStr)) / 1000)
     if (diff < 60) return 'Just now'
     if (diff < 3600) return Math.floor(diff/60) + 'm ago'
     if (diff < 86400) return Math.floor(diff/3600) + 'h ago'
@@ -471,67 +226,58 @@
   }
 
   function renderJobs(jobs) {
-    const grid = document.getElementById('jobs-grid')
+    var grid = document.getElementById('jobs-grid')
     document.getElementById('job-count').textContent = jobs.length
 
     if (jobs.length === 0) {
-      grid.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">⚡</div>
-          <div class="empty-title">No jobs in the free zone yet</div>
-          <div class="empty-sub">Check back soon or post your own job to get started.</div>
-        </div>
-      `
+      grid.innerHTML = '<div class="empty-state"><div class="empty-icon">&#9889;</div><div class="empty-title">No jobs in the free zone yet</div><div class="empty-sub">Check back soon or post your own job to get started.</div></div>'
       return
     }
 
-    grid.innerHTML = jobs.map(job => `
-      <div class="job-card" onclick="viewJob('${job.id}')">
-        <div class="job-card-top">
-          <div class="job-card-left">
-            <div class="job-card-title">${job.title || 'Untitled job'}</div>
-            <div class="job-card-meta">
-              <span>${job.content_type || 'Video'}</span>
-              <span class="meta-dot"></span>
-              <span>${job.video_length || '—'} min</span>
-              <span class="meta-dot"></span>
-              <span>Due: ${job.deadline || 'Flexible'}</span>
-            </div>
-          </div>
-          <div class="job-card-right">
-            <div class="job-price">${job.budget ? '£' + job.budget : 'Open'}</div>
-            <div class="job-price-label">Budget</div>
-          </div>
-        </div>
-        <div class="job-card-desc">${job.description || 'No description provided.'}</div>
-        <div class="job-card-footer">
-          <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
-            <span class="free-badge">Free zone</span>
-            <div class="job-tags">
-              ${(job.tags || []).map(t => `<span class="job-tag">${t}</span>`).join('')}
-            </div>
-          </div>
-          <div style="display:flex; align-items:center; gap:0.75rem;">
-            <span class="posted-time">${timeAgo(job.created_at)}</span>
-            ${userRole === 'editor' ? `<button class="apply-btn" onclick="event.stopPropagation(); applyToJob('${job.id}')">Apply</button>` : ''}
-          </div>
-        </div>
-      </div>
-    `).join('')
+    var html = ''
+    for (var i = 0; i < jobs.length; i++) {
+      var job = jobs[i]
+      var tags = ''
+      if (job.tags && job.tags.length) {
+        for (var t = 0; t < job.tags.length; t++) {
+          tags += '<span class="job-tag">' + job.tags[t] + '</span>'
+        }
+      }
+      var applyBtn = userRole === 'editor'
+        ? '<button class="apply-btn" onclick="event.stopPropagation();applyToJob(\'' + job.id + '\')">Apply</button>'
+        : ''
+      html += '<div class="job-card" onclick="viewJob(\'' + job.id + '\')">'
+      html += '<div class="job-card-top">'
+      html += '<div class="job-card-left">'
+      html += '<div class="job-card-title">' + (job.title || 'Untitled job') + '</div>'
+      html += '<div class="job-card-meta"><span>' + (job.content_type || 'Video') + '</span><span class="meta-dot"></span><span>' + (job.video_length || '—') + ' min</span><span class="meta-dot"></span><span>Due: ' + (job.deadline || 'Flexible') + '</span></div>'
+      html += '</div>'
+      html += '<div class="job-card-right"><div class="job-price">' + (job.budget ? '£' + job.budget : 'Open') + '</div><div class="job-price-label">Budget</div></div>'
+      html += '</div>'
+      html += '<div class="job-card-desc">' + (job.description || 'No description provided.') + '</div>'
+      html += '<div class="job-card-footer">'
+      html += '<div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">'
+      html += '<span class="free-badge">Free zone</span>'
+      html += '<div class="job-tags">' + tags + '</div>'
+      html += '</div>'
+      html += '<div style="display:flex;align-items:center;gap:0.75rem;"><span class="posted-time">' + timeAgo(job.created_at) + '</span>' + applyBtn + '</div>'
+      html += '</div></div>'
+    }
+    grid.innerHTML = html
   }
 
   function filterJobs() {
-    const search = document.getElementById('search-input').value.toLowerCase()
-    const minBudget = parseFloat(document.getElementById('budget-min').value) || 0
-    const maxBudget = parseFloat(document.getElementById('budget-max').value) || Infinity
+    var search = document.getElementById('search-input').value.toLowerCase()
+    var minBudget = parseFloat(document.getElementById('budget-min').value) || 0
+    var maxBudget = parseFloat(document.getElementById('budget-max').value) || Infinity
 
-    let filtered = allJobs.filter(job => {
-      const matchSearch = !search ||
-        (job.title && job.title.toLowerCase().includes(search)) ||
-        (job.description && job.description.toLowerCase().includes(search))
-      const matchType = !activeFilters.type || activeFilters.type.length === 0 || activeFilters.type.includes(job.content_type)
-      const budget = parseFloat(job.budget) || 0
-      const matchBudget = budget >= minBudget && budget <= maxBudget
+    var filtered = allJobs.filter(function(job) {
+      var matchSearch = !search ||
+        (job.title && job.title.toLowerCase().indexOf(search) !== -1) ||
+        (job.description && job.description.toLowerCase().indexOf(search) !== -1)
+      var matchType = !activeFilters.type || activeFilters.type.length === 0 || activeFilters.type.indexOf(job.content_type) !== -1
+      var budget = parseFloat(job.budget) || 0
+      var matchBudget = budget >= minBudget && budget <= maxBudget
       return matchSearch && matchType && matchBudget
     })
 
@@ -539,75 +285,88 @@
   }
 
   function sortJobs(value) {
-    if (value === 'price-high') allJobs.sort((a,b) => (b.budget||0) - (a.budget||0))
-    else if (value === 'price-low') allJobs.sort((a,b) => (a.budget||0) - (b.budget||0))
-    else allJobs.sort((a,b) => new Date(b.created_at) - new Date(a.created_at))
+    if (value === 'price-high') allJobs.sort(function(a,b){ return (b.budget||0)-(a.budget||0) })
+    else if (value === 'price-low') allJobs.sort(function(a,b){ return (a.budget||0)-(b.budget||0) })
+    else allJobs.sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at) })
     filterJobs()
   }
 
   function viewJob(id) {
-    window.location.href = `/job-detail.html?id=${id}`
+    window.location.href = '/job-detail.html?id=' + id
   }
 
-  async function applyToJob(id) {
+  function applyToJob(id) {
     alert('Application feature coming soon!')
   }
 
   async function init() {
-    const { data: { session } } = await client.auth.getSession()
+    var sessionData = await supabaseClient.auth.getSession()
+    var session = sessionData.data.session
+
     if (!session) { window.location.href = '/login.html'; return }
 
-    const { data: profile } = await client
-      .from('profiles')
-      .select('username, account_type')
-      .eq('id', session.user.id)
-      .single()
+    var profileData = await supabaseClient.from('profiles').select('username, account_type').eq('id', session.user.id).single()
+    var profile = profileData.data
 
     if (profile) {
-    // Set profile links in sidebar
-    if (profile) {
-      var _userId = session.user.id
-      var _profileUrl = profile.account_type === 'editor'
-        ? '/editor-profile.html?id=' + _userId
-        : '/client-profile.html?id=' + _userId
-      var _plEl = document.getElementById('my-profile-link')
-      var _uiEl = document.getElementById('profile-link')
-      if (_plEl) _plEl.href = _profileUrl
-      if (_uiEl) _uiEl.href = _profileUrl
-      var _nameEl = document.getElementById('user-name')
-      var _avatarEl = document.getElementById('user-avatar')
-      var _username = profile.username || session.user.email.split('@')[0]
-      if (_nameEl) _nameEl.textContent = _username
-      if (_avatarEl) _avatarEl.textContent = _username.charAt(0).toUpperCase()
-    }
       userRole = profile.account_type
-      const username = profile.username || session.user.email.split('@')[0]
-      document.getElementById('user-name').textContent = username
-      document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase()
-      document.getElementById('user-role').textContent = profile.account_type === 'editor' ? 'Editor' : 'Client'
-      if (profile.account_type === 'client') {
-        document.getElementById('post-job-btn').style.display = 'flex'
+      var username = profile.username || session.user.email.split('@')[0]
+      var profileUrl = profile.account_type === 'editor'
+        ? '/editor-profile.html?id=' + session.user.id
+        : '/client-profile.html?id=' + session.user.id
+
+      var nameEl = document.getElementById('user-name')
+      var avatarEl = document.getElementById('user-avatar')
+      var roleEl = document.getElementById('user-role')
+      var profileLink = document.getElementById('profile-link')
+      var myProfileLink = document.getElementById('my-profile-link')
+      var postJobBtn = document.getElementById('post-job-btn')
+
+      if (nameEl) nameEl.textContent = username
+      if (avatarEl) avatarEl.textContent = username.charAt(0).toUpperCase()
+      if (roleEl) roleEl.textContent = profile.account_type === 'editor' ? 'Editor' : 'Client'
+      if (profileLink) profileLink.href = profileUrl
+      if (myProfileLink) myProfileLink.href = profileUrl
+      if (postJobBtn && profile.account_type === 'client') postJobBtn.style.display = 'flex'
+
+      if (profile.account_type === 'editor') {
+        document.getElementById('sidebar-nav').innerHTML =
+          '<span class="nav-section-label">Main</span>' +
+          '<a class="nav-item" href="/dashboard-editor.html"><span class="nav-icon">&#9632;</span> Dashboard</a>' +
+          '<a class="nav-item" href="/browse-jobs.html"><span class="nav-icon">&#9670;</span> Browse jobs</a>' +
+          '<a class="nav-item" href="' + profileUrl + '"><span class="nav-icon">&#9673;</span> My profile</a>' +
+          '<span class="nav-section-label">My work</span>' +
+          '<a class="nav-item" href="/dashboard-editor.html"><span class="nav-icon">&#9671;</span> Active jobs</a>' +
+          '<a class="nav-item" href="/dashboard-editor.html"><span class="nav-icon">&#8635;</span> Applications</a>' +
+          '<a class="nav-item" href="/dashboard-editor.html"><span class="nav-icon">&#10003;</span> Completed</a>' +
+          '<span class="nav-section-label">Account</span>' +
+          '<a class="nav-item" href="/messages.html"><span class="nav-icon">&#9993;</span> Messages</a>' +
+          '<a class="nav-item" href="/upgrade.html"><span class="nav-icon">&#9733;</span> Upgrade plan</a>' +
+          '<a class="nav-item" href="/settings.html"><span class="nav-icon">&#9881;</span> Settings</a>'
       }
     }
 
-    const { data: jobs } = await client
+    var jobsData = await supabaseClient
       .from('jobs')
       .select('*')
       .eq('marketplace', 'free')
       .eq('status', 'open')
       .order('created_at', { ascending: false })
 
-    if (jobs) { allJobs = jobs; filterJobs() }
-    else renderJobs([])
+    if (jobsData.data && jobsData.data.length > 0) {
+      allJobs = jobsData.data
+      filterJobs()
+    } else {
+      renderJobs([])
+    }
   }
 
   async function handleLogout() {
-    await client.auth.signOut()
+    await supabaseClient.auth.signOut()
     window.location.href = '/index.html'
   }
 
   init()
 </script>
-
 </body>
 </html>
