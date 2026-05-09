@@ -342,7 +342,6 @@
       if (myProfileLink) myProfileLink.href = profileUrl
       if (postJobBtn && profile.account_type === 'client') postJobBtn.style.display = 'flex'
     }
-}
 
     if (profile.account_type === 'editor') {
       document.querySelector('.sidebar-nav').innerHTML =
@@ -360,7 +359,6 @@
         '<a class="nav-item" href="/settings.html"><span class="nav-icon">&#9881;</span> Settings</a>'
     }
 
-    var jobsData = await supabaseClient
     var jobsData = await supabaseClient
       .from('jobs')
       .select('*')
