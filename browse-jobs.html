@@ -648,9 +648,7 @@
       .eq('id', session.user.id)
       .single()
 
-    if (profile) {
-    // Set profile links in sidebar
-    if (profile) {
+if (profile) {
       var _userId = session.user.id
       var _profileUrl = profile.account_type === 'editor'
         ? '/editor-profile.html?id=' + _userId
@@ -659,13 +657,18 @@
       var _uiEl = document.getElementById('profile-link')
       if (_plEl) _plEl.href = _profileUrl
       if (_uiEl) _uiEl.href = _profileUrl
+
+      userRole = profile.account_type
+      const username = profile.username || session.user.email.split('@')[0]
       var _nameEl = document.getElementById('user-name')
       var _avatarEl = document.getElementById('user-avatar')
-      var _username = profile.username || session.user.email.split('@')[0]
-      if (_nameEl) _nameEl.textContent = _username
-      if (_avatarEl) _avatarEl.textContent = _username.charAt(0).toUpperCase()
-    }
-      userRole = profile.account_type
+      var _roleEl = document.getElementById('user-role')
+      if (_nameEl) _nameEl.textContent = username
+      if (_avatarEl) _avatarEl.textContent = username.charAt(0).toUpperCase()
+      if (_roleEl) _roleEl.textContent = profile.account_type === 'editor' ? 'Editor' : 'Client'
+
+      if (profile.account_type === 'client') {
+        document.getElementById('post-job-btn').style.display = 'flex'
       const username = profile.username || session.user.email.split('@')[0]
       document.getElementById('user-name').textContent = username
       document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase()
