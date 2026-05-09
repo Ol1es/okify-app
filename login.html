@@ -240,7 +240,8 @@
     }
 
     showSuccess('Logged in successfully. Redirecting...')
-    setTimeout(() => { window.location.href = '/dashboard.html' }, 1000)
+    const { data: prof } = await client.from('profiles').select('account_type').eq('id', data.user.id).single()
+setTimeout(() => { window.location.href = prof && prof.account_type === 'editor' ? '/dashboard-editor.html' : '/dashboard-client.html' }, 1000)
   }
 
   async function handleGoogleLogin() {
