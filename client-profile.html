@@ -347,64 +347,65 @@
     window.location.href = '/messages.html?user=' + profileUserId
   }
 
-  async function init() {
-    profileUserId = getClientIdFromUrl()
+async function init() {
+  profileUserId = getClientIdFromUrl()
 
-    const { data: { session } } = await client.auth.getSession()
-    if (!session) { window.location.href = '/login.html'; return }
+  const { data: { session } } = await client.auth.getSession()
+  if (!session) { window.location.href = '/login.html'; return }
 
-    currentUser = session.user
+  currentUser = session.user
 
-    const { data: myProfile } = await client.from('profiles').select('username, account_type').eq('id', session.user.id).single()
+  if (!profileUserId) profileUserId = session.user.id
 
-    if (myProfile) {
-      const username = myProfile.username || session.user.email.split('@')[0]
-      document.getElementById('user-name').textContent = username
-      document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase()
-      document.getElementById('user-role').textContent = myProfile.account_type === 'editor' ? 'Editor' : 'Client'
+  const isOwn = profileUserId === session.user.id
 
-      if (myProfile.account_type === 'client') {
-        document.getElementById('sidebar-nav').innerHTML = `
-          <span class="nav-section-label">Main</span>
-          <a class="nav-item" href="/dashboard-client.html"><span class="nav-icon">⊞</span> Dashboard</a>
-          <a class="nav-item" href="/post-job.html"><span class="nav-icon">+</span> Post a job</a>
-          <a class="nav-item" href="/browse-editors.html"><span class="nav-icon">◎</span> Browse editors</a>
-          <span class="nav-section-label">My jobs</span>
-          <a class="nav-item" href="#"><span class="nav-icon">◈</span> Active jobs</a>
-          <a class="nav-item" href="#"><span class="nav-icon">✓</span> Completed</a>
-          <span class="nav-section-label">Account</span>
-          <a class="nav-item active" href="#"><span class="nav-icon">◉</span> My profile</a>
-          <a class="nav-item" href="#"><span class="nav-icon">◉</span> Messages</a>
-          <a class="nav-item" href="#"><span class="nav-icon">⚙</span> Settings</a>
-        `
-      }
+  const { data: myProfile } = await client
+    .from('profiles')
+    .select('username, account_type')
+    .eq('id', session.user.id)
+    .single()
+
+  if (myProfile) {
+    const username = myProfile.username || session.user.email.split('@')[0]
+    document.getElementById('user-name').textContent = username
+    document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase()
+    document.getElementById('user-role').textContent = myProfile.account_type === 'editor' ? 'Editor' : 'Client'
+
+    if (myProfile.account_type === 'client') {
+      document.getElementById('sidebar-nav').innerHTML = `
+        <span class="nav-section-label">Main</span>
+        <a class="nav-item" href="/dashboard-client.html"><span class="nav-icon">⊞</span> Dashboard</a>
+        <a class="nav-item" href="/post-job.html"><span class="nav-icon">+</span> Post a job</a>
+        <a class="nav-item" href="/browse-editors.html"><span class="nav-icon">◎</span> Browse editors</a>
+        <span class="nav-section-label">My jobs</span>
+        <a class="nav-item" href="#"><span class="nav-icon">◈</span> Active jobs</a>
+        <a class="nav-item" href="#"><span class="nav-icon">✓</span> Completed</a>
+        <span class="nav-section-label">Account</span>
+        <a class="nav-item active" href="#"><span class="nav-icon">◉</span> My profile</a>
+        <a class="nav-item" href="/messages.html"><span class="nav-icon">✉</span> Messages</a>
+        <a class="nav-item" href="#"><span class="nav-icon">⚙</span> Settings</a>
+      `
     }
-
-    if (!profileUserId) profileUserId = session.user.id
-
-    const isOwn = profileUserId === session.user.id
-
-    const { data: profile, error } = await client.from('profiles').select('*').eq('id', profileUserId).single()
-
-    if (error || !profile) {
-      document.getElementById('loading').textContent = 'Profile not found.'
-      return
-    }
-
-    if (profile.account_type === 'editor' && !isOwn) {
-      window.location.href = '/editor-profile.html?id=' + profileUserId
-      return
-    }
-
-    renderProfile(profile, isOwn)
   }
 
-  async function handleLogout() {
-    await client.auth.signOut()
-    window.location.href = '/index.html'
+  const { data: profile, error } = await client
+    .from('profiles')
+    .select('*')
+    .eq('id', profileUserId)
+    .single()
+
+  if (error || !profile) {
+    document.getElementById('loading').textContent = 'Profile not found.'
+    return
   }
 
-  init()
+  if (profile.account_type === 'editor' && !isOwn) {
+    window.location.href = '/editor-profile.html?id=' + profileUserId
+    return
+  }
+
+  renderProfile(profile, isOwn)
+}
 </script>
 
 </body>
