@@ -360,32 +360,30 @@
 
 <!-- NAV SIDEBAR -->
 <aside class="sidebar">
-  <div class="sidebar-logo">
-    <a href="/index.html" class="logo">okify<span>.</span></a>
-  </div>
-  <nav class="sidebar-nav">
+  <div class="sidebar-logo"><a href="/index.html" class="logo">okify<span>.</span></a></div>
+  <nav class="sidebar-nav" id="sidebar-nav">
     <span class="nav-section-label">Main</span>
-    <a class="nav-item" href="/dashboard-editor.html"><span class="nav-icon">⊞</span> Dashboard</a>
-    <a class="nav-item active" href="/browse-jobs.html"><span class="nav-icon">◎</span> Browse jobs</a>
-    <a class="nav-item" href="/my-profile.html"><span class="nav-icon">◉</span> My profile</a>
-    <span class="nav-section-label">My work</span>
-    <a class="nav-item" href="#"><span class="nav-icon">◈</span> Active jobs</a>
-    <a class="nav-item" href="#"><span class="nav-icon">⟳</span> Applications</a>
-    <a class="nav-item" href="#"><span class="nav-icon">✓</span> Completed</a>
+    <a class="nav-item " href="/dashboard-client.html"><span class="nav-icon">&#9632;</span> Dashboard</a>
+    <a class="nav-item " href="/post-job.html"><span class="nav-icon">+</span> Post a job</a>
+    <a class="nav-item active" href="/browse-jobs.html"><span class="nav-icon">&#9670;</span> Marketplace</a>
+    <a class="nav-item " href="/browse-editors.html"><span class="nav-icon">&#9675;</span> Browse editors</a>
+    <span class="nav-section-label">My jobs</span>
+    <a class="nav-item" href="/dashboard-client.html#active-jobs"><span class="nav-icon">&#9671;</span> Active jobs</a>
+    <a class="nav-item" href="/dashboard-client.html#completed-jobs"><span class="nav-icon">&#10003;</span> Completed</a>
     <span class="nav-section-label">Account</span>
-    <a class="nav-item" href="#"><span class="nav-icon">◉</span> Messages</a>
-    <a class="nav-item" href="#"><span class="nav-icon">★</span> Upgrade plan</a>
-    <a class="nav-item" href="#"><span class="nav-icon">⚙</span> Settings</a>
+    <a class="nav-item " href="#" id="my-profile-link"><span class="nav-icon">&#9673;</span> My profile</a>
+    <a class="nav-item " href="/messages.html"><span class="nav-icon">&#9993;</span> Messages</a>
+    <a class="nav-item" href="/settings.html"><span class="nav-icon">&#9881;</span> Settings</a>
   </nav>
   <div class="sidebar-bottom">
-    <div class="user-info">
+    <a class="user-info" href="#" id="profile-link">
       <div class="user-avatar" id="user-avatar">?</div>
       <div>
         <div class="user-name" id="user-name">Loading...</div>
-        <div class="user-role" id="user-role">Editor</div>
+        <div class="user-role">Client</div>
       </div>
-    </div>
-    <button class="logout-btn" onclick="handleLogout()"><span>↪</span> Log out</button>
+    </a>
+    <button class="logout-btn" onclick="handleLogout()">&#8618; Log out</button>
   </div>
 </aside>
 
@@ -651,6 +649,22 @@
       .single()
 
     if (profile) {
+    // Set profile links in sidebar
+    if (profile) {
+      var _userId = session.user.id
+      var _profileUrl = profile.account_type === 'editor'
+        ? '/editor-profile.html?id=' + _userId
+        : '/client-profile.html?id=' + _userId
+      var _plEl = document.getElementById('my-profile-link')
+      var _uiEl = document.getElementById('profile-link')
+      if (_plEl) _plEl.href = _profileUrl
+      if (_uiEl) _uiEl.href = _profileUrl
+      var _nameEl = document.getElementById('user-name')
+      var _avatarEl = document.getElementById('user-avatar')
+      var _username = profile.username || session.user.email.split('@')[0]
+      if (_nameEl) _nameEl.textContent = _username
+      if (_avatarEl) _avatarEl.textContent = _username.charAt(0).toUpperCase()
+    }
       userRole = profile.account_type
       const username = profile.username || session.user.email.split('@')[0]
       document.getElementById('user-name').textContent = username
