@@ -694,27 +694,9 @@
       var _username = profile.username || session.user.email.split('@')[0]
       if (_nameEl) _nameEl.textContent = _username
       if (_avatarEl) _avatarEl.textContent = _username.charAt(0).toUpperCase()
-    }
+      var _roleEl = document.getElementById('user-role')
+      if (_roleEl) _roleEl.textContent = profile.account_type === 'editor' ? 'Editor' : 'Client'
       userRole = profile.account_type
-      const username = profile.username || session.user.email.split('@')[0]
-      document.getElementById('user-name').textContent = username
-      document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase()
-      document.getElementById('user-role').textContent = profile.account_type === 'editor' ? 'Editor' : 'Client'
-
-      if (profile.account_type === 'client') {
-        document.getElementById('sidebar-nav').innerHTML = `
-          <span class="nav-section-label">Main</span>
-          <a class="nav-item" href="/dashboard-client.html"><span class="nav-icon">⊞</span> Dashboard</a>
-          <a class="nav-item" href="/post-job.html"><span class="nav-icon">+</span> Post a job</a>
-          <a class="nav-item active" href="/browse-jobs.html"><span class="nav-icon">◎</span> Browse</a>
-          <span class="nav-section-label">My jobs</span>
-          <a class="nav-item" href="#"><span class="nav-icon">◈</span> Active jobs</a>
-          <a class="nav-item" href="#"><span class="nav-icon">✓</span> Completed</a>
-          <span class="nav-section-label">Account</span>
-          <a class="nav-item" href="#"><span class="nav-icon">◉</span> Messages</a>
-          <a class="nav-item" href="#"><span class="nav-icon">⚙</span> Settings</a>
-        `
-      }
     }
 
     const { data: job, error } = await client
